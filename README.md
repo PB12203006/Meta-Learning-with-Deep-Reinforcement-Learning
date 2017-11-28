@@ -1,6 +1,11 @@
 # Meta-Learning-with-Deep-Reinforcement-Learning
-Generate_Data_Set.py Generates DataSet
-Auto_test_on_generated_data.py Processes Dataset with Auto-sklearn
-get_autosklean_tried_models_hyperparameters.py Parses the log of Auto-sklearn
-reproduce_performance_of_AutoML_tried_models.py Reproduces the path of Auto-sklearn by calling sklearn directly
-summary.ipynb Summarizes the statistics to produce input to neural network
+
+__Generate_Data_Set.py__   Generates DataSet
+
+__Auto_test_on_generated_data.py__  Processes Dataset with Auto-sklearn
+
+__get_autosklean_tried_models_hyperparameters.py__   Parses the log of Auto-sklearn
+
+__reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
+
+__summary.ipynb__   Summarizes the statistics to produce input to neural network
