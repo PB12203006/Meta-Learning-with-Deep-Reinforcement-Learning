@@ -9,3 +9,5 @@ __get_autosklean_tried_models_hyperparameters.py__   Parses the log of Auto-skle
 __reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
 
 __summary.ipynb__   Summarizes the statistics to produce input to neural network
+
+Up till milestone, all code are tentative.
