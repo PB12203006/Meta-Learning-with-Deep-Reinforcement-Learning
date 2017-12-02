@@ -3,13 +3,12 @@
 import numpy as np
 import json
 import time
-import sys
 # from pprint import pprint
 from autosklearn.pipeline.classification import SimpleClassificationPipeline
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.model_selection import KFold
 
-def get_models_hyperparameters(data_set_idx):
+def get_models_performance(reproduce_num, data_set_idx):
     X = np.loadtxt('Data_Set/X_' + str(data_set_idx))
     y = np.loadtxt('Data_Set/y_' + str(data_set_idx))
     probas = np.loadtxt('Data_Set/probas_' + str(data_set_idx))
@@ -19,8 +18,8 @@ def get_models_hyperparameters(data_set_idx):
     # duration = get_training_duration(data_set_idx)
     with open(tried_models_filename) as fp:
         models = json.load(fp)
-        num = min( 21 , len(models) + 1)
-        for i in range(1, num):
+        reproduce_num_act = min(len(models), reproduce_num)
+        for i in range(1, len(models) + 1):
             model = models[str(i)]
             #print(model)
             train_accuracy_score = []
@@ -49,7 +48,7 @@ def get_models_hyperparameters(data_set_idx):
                              "test_accuracy_score": np.mean(test_accuracy_score),
                              "train_log_loss" : np.mean(train_log_loss),
                              "test_log_loss" : np.mean(test_log_loss),
-                             "duration" : duration}
+                             "duration" : duration/5}
             #if i in duration:
             #    models_performance[i]["duration"] = duration[i]
     repreduce_performance_json_filename = tried_models_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
@@ -68,13 +67,10 @@ def get_training_duration(data_set_idx):
                 duration[info['num_run']] = info['duration']
     return duration
 
-def main(start,end):
-    for i in range(int(start),int(end)):
-        try:
-            get_models_hyperparameters(i)
-        except:
-            print(i)
-            continue
+def test():
+    for i in range(1):
+        get_models_performance(20, i)
         
-if __name__ == "__main__":
-    main(sys.argv[1],sys.argv[2])
+        
+#if __name__ == "__main__":
+#    test()

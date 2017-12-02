@@ -2,45 +2,86 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import json
-# from pprint import pprint
+
+"""
+balancing:strategy : none/weighting
+
+imputation:strategy : not mean / mean
+imputation:strategy : not median / median
+imputation:strategy : not most_frequent / most_frequent
+
+rescaling:__choice__ : not none / none
+rescaling:__choice__ : not minmax/minmax
+rescaling:__choice__ : not normalize/normalize
+rescaling:__choice__ : not standardize/standardize
+
+preprocessor:__choice__ : no_preprocessing/PCA
+classifier:__choice__ : bernoulli_nb/qda
+
+one_hot_encoding:use_minimum_fraction: True/False
+one_hot_encoding:minimum_fraction
+
+preprocessor:pca:keep_variance
+preprocessor:pca:whiten : True/False
+
+classifier:bernoulli_nb:alpha
+classifier:bernoulli_nb:fit_prior : True/False
+classifier:qda:reg_param
+
+"""
+
 
 model_hyperparameters_list = [{"balancing:strategy" : {"none": 0, "weighting" : 1}},
-                              {"classifier:__choice__" : {"bernoulli_nb": 0, "libsvm_svc": 1, "qda": 2}},
                               {"imputation:strategy" : {"mean": 0, "median": 1, "most_frequent" : 2}},
+                              {"rescaling:__choice__" : {"none": 0, "minmax": 1, "normalize": 2, "standardize": 3}},
+                              {"preprocessor:__choice__" : {"no_preprocessing" : 0, "pca": 1}},
+                              {"classifier:__choice__" : {"bernoulli_nb": 0, "qda": 1}},
+                              
                               {"one_hot_encoding:use_minimum_fraction" : {"True" : 0, "False" : 1}},
-                              {"preprocessor:__choice__" : {"no_preprocessing" : 0}},
-                              {"rescaling:__choice__" : {"minmax": 0, "none": 1, "normalize": 2, "standardize": 3}},
+                              {"one_hot_encoding:minimum_fraction" : [0.0001, 0.5]},
+                              
+                              {"preprocessor:pca:keep_variance" : [0.5, 0.9999]},
+                              {"preprocessor:pca:whiten" : {"True": 0, "False": 1}},
+                              
                               {"classifier:bernoulli_nb:alpha" : [0.01, 100.0]},
                               {"classifier:bernoulli_nb:fit_prior" : {"True" : 0, "False" : 1}},
-                              {"classifier:libsvm_svc:C" : [0.03125, 32768.0]},
-                              {"classifier:libsvm_svc:gamma" : [3.0517578125e-05, 8.0]},
-                              {"classifier:libsvm_svc:kernel" : {"rbf" : 0, "poly" : 1, "sigmoid" :2}},
-                              {"classifier:libsvm_svc:max_iter" : [-1, 5000]},
-                              {"classifier:libsvm_svc:shrinking" : {"True" : 0, "False" : 1}},
-                              {"classifier:libsvm_svc:tol" : [1e-05, 0.1]},
-                              {"classifier:qda:reg_param" : [0.0, 1.0]},
-                              {"one_hot_encoding:minimum_fraction" : [0.0001, 0.5]},
-                              {"classifier:libsvm_svc:coef0" : [-1.0, 1.0]},
-                              {"classifier:libsvm_svc:degree" : [1, 5]}]
+                              {"classifier:qda:reg_param" : [0.0, 1.0]}
+                              ]
+                              #{"classifier:libsvm_svc:C" : [0.03125, 32768.0]},
+                              #{"classifier:libsvm_svc:gamma" : [3.0517578125e-05, 8.0]},
+                              #{"classifier:libsvm_svc:kernel" : {"rbf" : 0, "poly" : 1, "sigmoid" :2}},
+                              #{"classifier:libsvm_svc:max_iter" : [-1, 5000]},
+                              #{"classifier:libsvm_svc:shrinking" : {"True" : 0, "False" : 1}},
+                              #{"classifier:libsvm_svc:tol" : [1e-05, 0.1]},
+                              #{"classifier:libsvm_svc:coef0" : [-1.0, 1.0]},
+                              #{"classifier:libsvm_svc:degree" : [1, 5]}
+                              
 
 model_hyperparameters_dict = {"balancing:strategy" : {"none", "weighting"},
-                              "classifier:__choice__" : {"bernoulli_nb", "libsvm_svc", "qda"},
                               "imputation:strategy" : {"mean", "median", "most_frequent" },
+                              "rescaling:__choice__" : {"none", "minmax", "normalize", "standardize"},
+                              "preprocessor:__choice__" : {"no_preprocessing", "pca"},
+                              "classifier:__choice__" : {"bernoulli_nb", "qda"},
+                              
                               "one_hot_encoding:use_minimum_fraction" : {"True", "False"},
-                              "preprocessor:__choice__" : {"no_preprocessing" },
-                              "rescaling:__choice__" : {"minmax", "none", "normalize", "standardize"},
-                              "classifier:bernoulli_nb:alpha" : [0.01, 100.0],
-                              "classifier:bernoulli_nb:fit_prior" : {"True" , "False" },
-                              "classifier:libsvm_svc:C" : [0.03125, 32768.0],
-                              "classifier:libsvm_svc:gamma" : [3.0517578125e-05, 8.0],
-                              "classifier:libsvm_svc:kernel" : {"rbf", "poly", "sigmoid"},
-                              "classifier:libsvm_svc:max_iter" : [-1,5000],
-                              "classifier:libsvm_svc:shrinking" : {"True", "False"},
-                              "classifier:libsvm_svc:tol" : [1e-05, 0.1],
-                              "classifier:qda:reg_param" : [0.0, 1.0],
                               "one_hot_encoding:minimum_fraction" : [0.0001, 0.5],
-                              "classifier:libsvm_svc:coef0" : [-1.0, 1.0],
-                              "classifier:libsvm_svc:degree" : [1, 5]}
+                              
+                              "preprocessor:pca:keep_variance" : [0.5, 0.9999],
+                              "preprocessor:pca:whiten" : {"True", "False"},
+                              
+                              "classifier:bernoulli_nb:alpha" : [0.01, 100.0],
+                              "classifier:bernoulli_nb:fit_prior" : {"True" , "False"},
+                              "classifier:qda:reg_param" : [0.0, 1.0]
+                              }
+                              #"classifier:libsvm_svc:C" : [0.03125, 32768.0],
+                              #"classifier:libsvm_svc:gamma" : [3.0517578125e-05, 8.0],
+                              #"classifier:libsvm_svc:kernel" : {"rbf", "poly", "sigmoid"},
+                              #"classifier:libsvm_svc:max_iter" : [-1,5000],
+                              #"classifier:libsvm_svc:shrinking" : {"True", "False"},
+                              #"classifier:libsvm_svc:tol" : [1e-05, 0.1],
+                              #"classifier:libsvm_svc:coef0" : [-1.0, 1.0],
+                              #"classifier:libsvm_svc:degree" : [1, 5]
+                             
 
 def one_hot_encode(dim, num):
     """
@@ -67,7 +108,7 @@ def encode_model(model_hyperparameters):
             if key not in model_hyperparameters and type(value) is dict:
                 encoded_model.extend(one_hot_encode(len(value), -1)) # this parameter does not show up in this model selection
             elif key not in model_hyperparameters and type(value) is list:
-                encoded_model.append(0.0) # this parameter does not show up in this model selection
+                encoded_model.append(value[0]) # this parameter does not show up in this model selection
             elif key in model_hyperparameters and type(value) is dict:
                 encoded_model.extend(one_hot_encode(len(value), value[model_hyperparameters[key]]))
             elif key in model_hyperparameters and type(value) is list:
@@ -99,8 +140,10 @@ def get_encoded_models_for_data_set(data_set_num):
             elif parse_line and len(line.split(", Value:")) == 2:
                 key = line.split(", Value:")[0].strip()
                 val = line.split(", Value:")[1].strip().replace("'","").replace("\n", "")
-                if type(model_hyperparameters_dict[key]) is list and key != "classifier:libsvm_svc:degree":
+                if type(model_hyperparameters_dict[key]) is list: # and key != "classifier:libsvm_svc:degree":
                     val = float(val)
+                tried_models[count][key] = val
+                '''
                 elif type(model_hyperparameters_dict[key]) is list and key == "classifier:libsvm_svc:degree":
                     val = int(val)
                 tried_models[count][key] = val
@@ -108,6 +151,7 @@ def get_encoded_models_for_data_set(data_set_num):
                 key = "classifier:libsvm_svc:max_iter"
                 val = int(line.split(", Constant:")[1])
                 tried_models[count][key] = val
+                '''
         # print(tried_models)
         # print(tried_models_hyperparameters_encode)
     tried_models_filename = "./log/classifier_log" + str(data_set_num) + "/tried_models_for_dataset" + str(data_set_num) + ".json"
@@ -119,15 +163,11 @@ def get_encoded_models_for_data_set(data_set_num):
     print("Saved encoded AutoML tried models and hyperparameters matrix in file: " + tried_models_hyperparameters_encode_filename)
     return tried_models_hyperparameters_encode, tried_models
                 
-def main():
+def test():
     # generate model selections and encoded models for each dataset
-    for i in range(25000):
-        try:
-            tried_models_hyperparameters_encode, tried_models = get_encoded_models_for_data_set(i)
-        except:
-            print(i)
-            continue
+    for i in range(2):
+        tried_models_hyperparameters_encode, tried_models = get_encoded_models_for_data_set(i)
         
         
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    test()
