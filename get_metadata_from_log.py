@@ -2,6 +2,48 @@
 # -*- coding: utf-8 -*-
 import json
 
+'''
+dict_keys:
+    'ClassEntropy',
+    'SymbolsSum', 
+    'SymbolsSTD', 
+    'SymbolsMean', 
+    'SymbolsMax', 
+    'SymbolsMin', 
+    'ClassProbabilitySTD', 
+    'ClassProbabilityMean', 
+    'ClassProbabilityMax', 
+    'ClassProbabilityMin', 
+    'InverseDatasetRatio', 
+    'DatasetRatio', 
+    'RatioNominalToNumerical', 
+    'RatioNumericalToNominal', 
+    'NumberOfCategoricalFeatures', 
+    'NumberOfNumericFeatures', 
+    'NumberOfMissingValues', 
+    'NumberOfFeaturesWithMissingValues', 
+    'NumberOfInstancesWithMissingValues', 
+    'NumberOfFeatures', 
+    'NumberOfClasses', 
+    'NumberOfInstances', 
+    'LogInverseDatasetRatio', 
+    'LogDatasetRatio', 
+    'PercentageOfMissingValues', 
+    'PercentageOfFeaturesWithMissingValues', 
+    'PercentageOfInstancesWithMissingValues', 
+    'LogNumberOfFeatures', 
+    'LogNumberOfInstances', 
+    'LandmarkRandomNodeLearner', 
+    'SkewnessSTD', 
+    'SkewnessMean', 
+    'SkewnessMax', 
+    'SkewnessMin', 
+    'KurtosisSTD', 
+    'KurtosisMean', 
+    'KurtosisMax', 
+    'KurtosisMin'
+'''
+
 def parse_num_from_str(s):
     try:
         return int(s)
@@ -29,4 +71,5 @@ def get_metadata_from_log(data_set_num):
                     break
         with open(metafeatures_filename, 'w') as fp:
             json.dump(metafeatures, fp)
-                    
+    return metafeatures
+                 

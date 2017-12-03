@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import tensorflow as tf
 import keras
 import numpy as np
@@ -12,7 +14,7 @@ from keras.optimizers import Adadelta
 from keras import optimizers
 from keras.models import Model, load_model
 from keras import metrics
-from Load_and_transform import *
+#from Load_and_transform_data import *
 
 #Dimension 0: 0 if none, 1 if weighting
 #Dimension 1: bernoulli_nb
@@ -42,6 +44,33 @@ from Load_and_transform import *
 #Dimension 25: svm, coef0
 #Dimension 26: svm, degree
 
+"""
+0 - balancing:strategy : none/weighting
+
+1 - imputation:strategy : not mean / mean
+2 - imputation:strategy : not median / median
+3 - imputation:strategy : not most_frequent / most_frequent
+
+4 - rescaling:__choice__ : not none / none
+5 - rescaling:__choice__ : not minmax/minmax
+6 - rescaling:__choice__ : not normalize/normalize
+7 - rescaling:__choice__ : not standardize/standardize
+
+8 - preprocessor:__choice__ : no_preprocessing/PCA
+9 - classifier:__choice__ : bernoulli_nb/qda
+
+10 - one_hot_encoding:use_minimum_fraction: True/False
+11 - one_hot_encoding:minimum_fraction
+
+12 - preprocessor:pca:keep_variance
+13 - preprocessor:pca:whiten : True/False
+
+14 - classifier:bernoulli_nb:alpha
+15 - classifier:bernoulli_nb:fit_prior : True/False
+16 - classifier:qda:reg_param
+
+"""
+
 def cross_entropy_with_logits(y_true, y_pred, dimensions, weights):
     choice_true = tf.gather(y_true, dimensions, axis=2)
     choice_pred_logits = tf.gather(y_pred, dimensions, axis=2)
@@ -61,102 +90,106 @@ def square_params_loss(y_true, y_pred, dimensions, weights):
 def customized_loss(y_true, y_pred):
     balance_loss_weight = 0.01
     rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
     model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
     bernoulli_nb_loss_weight = 0.5
-    svm_loss_weight = 0.5
     qda_loss_weight = 0.5
-    clf_bernoulli_nb_used = tf.gather(y_true, 1, axis=2)
-    clf_svm_used = tf.gather(y_true, 2, axis=2)
-    clf_qda_used = tf.gather(y_true, 3, axis=2)
-    clf_svm_poly_used = tf.gather(y_true, 18, axis=2)
-    
+    clf_pca_used = tf.gather(y_true, 8, axis=2)
+    clf_bernoulli_nb_used = 1 - tf.gather(y_true, 9, axis=2)
+    clf_qda_used = tf.gather(y_true, 9, axis=2)
+    #clf_svm_poly_used = tf.gather(y_true, 18, axis=2)
+
     #Dimension 0 balance
     balance_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 0, weights=balance_loss_weight)
+
+    #Dimesnsion 1, 2, 3 imputation choice
+    imputation_choice_loss = cross_entropy_with_logits(y_true, y_pred, [1,2,3], weights=imputation_choice_loss_weight)
+
+    #Dimension 4,5,6,7 rescale choice
+    rescale_loss = cross_entropy_with_logits(y_true, y_pred, [4,5,6,7], weights=rescale_loss_weight)
     
-    #Dimesnsion 1, 2, 3 classifier choice
-    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [1,2,3], weights=model_choice_loss_weight)
+    #Dimension 8 preprocessor choice
+    preprocessor_choice_loss = cross_entropy_with_logits(y_true, y_pred, [8], weights=preprocessor_choice_loss_weight)
     
-    #Dimension 4,5,6,7,8 irrelevant
+    #Dimension 9 classifier choice
+    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [9], weights=model_choice_loss_weight)
     
-    #Dimension 9,10,11,12
-    rescale_loss = cross_entropy_with_logits(y_true, y_pred, [9,10,11,12], weights=rescale_loss_weight)
+    #Dimension 10, 11 one hot - irrelevant
+
+    #Dimension 12 preprocessor pca
+    pca_variance_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used * pca_loss_weight)
+    pca_whiten_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 13, weights=clf_pca_used * pca_loss_weight)
+    pca_loss = pca_variance_loss + pca_whiten_loss
     
-    #Dimension 13
-    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [13], weights=clf_bernoulli_nb_used * bernoulli_nb_loss_weight)
     #Dimension 14
-    bernoulli_nb_fit_prior_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 14, weights=clf_bernoulli_nb_used * bernoulli_nb_loss_weight)
+    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used*bernoulli_nb_loss_weight)
+    #Dimension 15
+    bernoulli_nb_fit_prior_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 15, weights=clf_bernoulli_nb_used * bernoulli_nb_loss_weight)
     bernoulli_nb_loss = bernoulli_nb_fit_prior_loss + bernoulli_nb_params_loss
-    
-    #Dimension 15,16, 22,25
-    svm_param_loss = square_params_loss(y_true, y_pred, [15, 16, 22, 25], weights=clf_svm_used * svm_loss_weight)
-    #Dimension 17, 18,19
-    svm_kernel_loss = cross_entropy_with_logits(y_true, y_pred, [17,18,19],weights=clf_svm_used * svm_loss_weight)
-    #Dimension 26
-    svm_degree_loss = square_params_loss(y_true, y_pred, [26], weights=clf_svm_used * svm_loss_weight * clf_svm_poly_used)
-    svm_loss = svm_kernel_loss + svm_param_loss + svm_degree_loss
-    
-    #Dimension 20, 21, 24 irrelevant; in runs, always shrink
-    
-    #Dimension 23
-    qda_loss = square_params_loss(y_true, y_pred, [23], weights = clf_qda_used * qda_loss_weight)
-    
+
+    #Dimension 16
+    qda_loss = square_params_loss(y_true, y_pred, [16], weights = clf_qda_used * qda_loss_weight)
+
     #Aggregating the losses
-    loss = balance_loss_weight + model_choice_loss + bernoulli_nb_loss + svm_loss + qda_loss
-    
+    loss = balance_loss + imputation_choice_loss + rescale_loss + preprocessor_choice_loss + model_choice_loss + pca_loss + bernoulli_nb_loss + qda_loss
+
     return loss
 
+def preprocessor_choice_loss_(y_true, y_pred):
+    preprocessor_choice_loss = cross_entropy_with_logits(y_true, y_pred, [8], weights=1)
+    return preprocessor_choice_loss
+
 def model_choice_loss_(y_true, y_pred):
-    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [1,2,3], weights=1)
+    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [9], weights=1)
     return model_choice_loss
 
-def model_choice_accuracy_(y_true, y_pred):
-    true_one_hot = tf.gather(y_true, [1,2,3], axis=2)
-    true_labels = tf.argmax(true_one_hot, axis=2)
-    pred_one_hot = tf.gather(y_true, [1,2,3], axis=2)
-    pred_labels = tf.argmax(pred_one_hot, axis=2)
+def preprocessor_choice_accuracy_(y_true, y_pred):
+    true_labels = tf.gather(y_true, [8], axis=2)
+    pred_labels = tf.gather(y_true, [8], axis=2)
     accuracy, o = tf.metrics.accuracy(true_labels, pred_labels)
     return accuracy
 
-def kernel_choice_accuracy_(y_true, y_pred):
-    clf_svm_used = tf.gather(y_true, 2, axis=2)
-    true_one_hot = tf.gather(y_true, [17,18,19], axis=2)
-    true_labels = tf.argmax(true_one_hot, axis=2)
-    pred_one_hot = tf.gather(y_pred, [17,18,19], axis=2)
-    pred_labels = tf.argmax(pred_one_hot, axis=2)
-    accuracy, o = tf.metrics.accuracy(true_labels, pred_labels, weights=clf_svm_used)
+def model_choice_accuracy_(y_true, y_pred):
+    true_labels = tf.gather(y_true, [9], axis=2)
+    pred_labels = tf.gather(y_true, [9], axis=2)
+    accuracy, o = tf.metrics.accuracy(true_labels, pred_labels)
     return accuracy
 
-def svm_param_loss_(y_true, y_pred):
-    clf_svm_used = tf.gather(y_true, 2, axis=2)
-    svm_param_loss = square_params_loss(y_true, y_pred, [15, 16, 22, 25], weights=clf_svm_used)
-    return svm_param_loss
+def pca_param_loss_(y_true, y_pred):
+    clf_pca_used = tf.gather(y_true, 8, axis=2)
+    pca_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used)
+    return pca_loss
 
 def qda_param_loss_(y_true, y_pred):
-    clf_qda_used = tf.gather(y_true, 3, axis=2)
-    qda_loss = square_params_loss(y_true, y_pred, [23], weights = clf_qda_used)
+    clf_qda_used = tf.gather(y_true, 9, axis=2)
+    qda_loss = square_params_loss(y_true, y_pred, [16], weights = clf_qda_used)
     return qda_loss
 
 def bernoulli_nb_param_loss_(y_true, y_pred):
-    clf_bernoulli_nb_used = tf.gather(y_true, 1, axis=2)
-    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [13], weights=clf_bernoulli_nb_used)
+    clf_bernoulli_nb_used = tf.gather(y_true, 9, axis=2) # 0 - bernoulli_nb ? 
+    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=1-clf_bernoulli_nb_used)
     return bernoulli_nb_params_loss
 
-max_length = 20
-meta_statistics_input_layer = Input(shape=(max_length, 10))
-y_last_input_layer = Input(shape=(max_length, 27))
-feedback_input_layer = Input(shape=(max_length, 4))
+max_length = 20 # batch size
+meta_statistics_input_layer = Input(shape=(max_length, 10)) # meta_statistics_input num
+x_last_input_layer = Input(shape=(max_length, 17))
+feedback_input_layer = Input(shape=(max_length, 4)) # 4: training testing loss accuracy
 meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
-y_last_in_layer = Dense(10, activation='sigmoid')(y_last_input_layer)
+x_last_in_layer = Dense(10, activation='sigmoid')(x_last_input_layer)
 feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
-input_agg = Add()([meta_statistics_in_layer, y_last_in_layer, feedback_in_layer])
+input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
 input_agg = Dense(10, activation='sigmoid')(input_agg)
-predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg)
+predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
+# LSTM INPUT ONE STEP GET ONE OUT, not input all
 predictions = Dense(10, activation='sigmoid')(predictions)
-predictions = Dense(27, activation=None)(predictions)
-model = Model(inputs=[meta_statistics_input_layer, y_last_input_layer, feedback_input_layer], outputs=predictions)
-model.compile(loss=customized_loss, optimizer='Adam', metrics=[model_choice_loss_, model_choice_accuracy_, svm_param_loss_, kernel_choice_accuracy_, qda_param_loss_, bernoulli_nb_param_loss_])
+predictions = Dense(17, activation=None)(predictions)
+model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_input_layer], outputs=predictions)
+# add pca loss, continueous: square_params_loss
+model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, preprocessor_choice_accuracy_, model_choice_accuracy_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_])
 model.summary()
 
-meta_data_dir = 'Generated_data/datafeature.npy'
-meta_data = load_meta_data_from_dir(meta_data_dir)
-performance =
+#meta_data_dir = 'Generated_data/datafeature.npy'
+#meta_data = load_meta_data_from_dir(meta_data_dir)
+#performance =
