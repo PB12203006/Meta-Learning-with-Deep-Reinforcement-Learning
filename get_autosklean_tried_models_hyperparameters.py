@@ -143,15 +143,7 @@ def get_encoded_models_for_data_set(data_set_num):
                 if type(model_hyperparameters_dict[key]) is list: # and key != "classifier:libsvm_svc:degree":
                     val = float(val)
                 tried_models[count][key] = val
-                '''
-                elif type(model_hyperparameters_dict[key]) is list and key == "classifier:libsvm_svc:degree":
-                    val = int(val)
-                tried_models[count][key] = val
-            elif parse_line and "classifier:libsvm_svc:max_iter" in line:
-                key = "classifier:libsvm_svc:max_iter"
-                val = int(line.split(", Constant:")[1])
-                tried_models[count][key] = val
-                '''
+
         # print(tried_models)
         # print(tried_models_hyperparameters_encode)
     tried_models_filename = "./log/classifier_log" + str(data_set_num) + "/tried_models_for_dataset" + str(data_set_num) + ".json"

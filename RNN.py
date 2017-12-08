@@ -14,6 +14,7 @@ from keras.optimizers import Adadelta
 from keras import optimizers
 from keras.models import Model, load_model
 from keras import metrics
+from integrate_rnn_input_matrix import integrate_encoded_data_for_datasets
 #from Load_and_transform_data import *
 
 #Dimension 0: 0 if none, 1 if weighting
@@ -43,8 +44,53 @@ from keras import metrics
 #Dimension 24: one-hot mean fraction
 #Dimension 25: svm, coef0
 #Dimension 26: svm, degree
+"""
+METADATA:
+
+0 - 'ClassEntropy',
+1 - 'SymbolsSum',
+2 - 'SymbolsSTD',
+3 - 'SymbolsMean',
+4 - 'SymbolsMax',
+5 - 'SymbolsMin',
+6 - 'ClassProbabilitySTD',
+7 - 'ClassProbabilityMean',
+8 - 'ClassProbabilityMax',
+9 - 'ClassProbabilityMin',
+10 - 'InverseDatasetRatio',
+11 - 'DatasetRatio',
+12 - 'RatioNominalToNumerical',
+13 - 'RatioNumericalToNominal',
+14 - 'NumberOfCategoricalFeatures',
+15 - 'NumberOfNumericFeatures',
+16 - 'NumberOfMissingValues',
+17 - 'NumberOfFeaturesWithMissingValues',
+18 - 'NumberOfInstancesWithMissingValues',
+19 - 'NumberOfFeatures',
+20 - 'NumberOfClasses',
+21 - 'NumberOfInstances',
+22 - 'LogInverseDatasetRatio',
+23 - 'LogDatasetRatio',
+24 - 'PercentageOfMissingValues',
+25 - 'PercentageOfFeaturesWithMissingValues',
+26 - 'PercentageOfInstancesWithMissingValues',
+27 - 'LogNumberOfFeatures',
+28 - 'LogNumberOfInstances',
+29 - 'LandmarkRandomNodeLearner',
+30 - 'SkewnessSTD',
+31 - 'SkewnessMean',
+32 - 'SkewnessMax',
+33 - 'SkewnessMin',
+34 - 'KurtosisSTD',
+35 - 'KurtosisMean',
+36 - 'KurtosisMax',
+37 - 'KurtosisMin'
 
 """
+
+"""
+MODEL CHOICE
+
 0 - balancing:strategy : none/weighting
 
 1 - imputation:strategy : not mean / mean
@@ -68,6 +114,16 @@ from keras import metrics
 14 - classifier:bernoulli_nb:alpha
 15 - classifier:bernoulli_nb:fit_prior : True/False
 16 - classifier:qda:reg_param
+
+"""
+
+"""
+MODEL PERFORMANCE
+
+0 - train_accuracy_score
+1 - test_accuracy_score
+2 - train_log_loss
+3 - test_log_loss
 
 """
 
@@ -109,20 +165,20 @@ def customized_loss(y_true, y_pred):
 
     #Dimension 4,5,6,7 rescale choice
     rescale_loss = cross_entropy_with_logits(y_true, y_pred, [4,5,6,7], weights=rescale_loss_weight)
-    
+
     #Dimension 8 preprocessor choice
     preprocessor_choice_loss = cross_entropy_with_logits(y_true, y_pred, [8], weights=preprocessor_choice_loss_weight)
-    
+
     #Dimension 9 classifier choice
     model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [9], weights=model_choice_loss_weight)
-    
+
     #Dimension 10, 11 one hot - irrelevant
 
     #Dimension 12 preprocessor pca
     pca_variance_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used * pca_loss_weight)
     pca_whiten_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 13, weights=clf_pca_used * pca_loss_weight)
     pca_loss = pca_variance_loss + pca_whiten_loss
-    
+
     #Dimension 14
     bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used*bernoulli_nb_loss_weight)
     #Dimension 15
@@ -168,12 +224,12 @@ def qda_param_loss_(y_true, y_pred):
     return qda_loss
 
 def bernoulli_nb_param_loss_(y_true, y_pred):
-    clf_bernoulli_nb_used = tf.gather(y_true, 9, axis=2) # 0 - bernoulli_nb ? 
+    clf_bernoulli_nb_used = tf.gather(y_true, 9, axis=2) # 0 - bernoulli_nb ?
     bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=1-clf_bernoulli_nb_used)
     return bernoulli_nb_params_loss
 
 max_length = 20 # batch size
-meta_statistics_input_layer = Input(shape=(max_length, 10)) # meta_statistics_input num
+meta_statistics_input_layer = Input(shape=(max_length, 38)) # meta_statistics_input num
 x_last_input_layer = Input(shape=(max_length, 17))
 feedback_input_layer = Input(shape=(max_length, 4)) # 4: training testing loss accuracy
 meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
@@ -190,6 +246,6 @@ model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_
 model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, preprocessor_choice_accuracy_, model_choice_accuracy_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_])
 model.summary()
 
-#meta_data_dir = 'Generated_data/datafeature.npy'
-#meta_data = load_meta_data_from_dir(meta_data_dir)
-#performance =
+generate_range = range(0,5)
+metafeatures_matrix, model_choice_matrix, performance_matrix = integrate_encoded_data_for_datasets(generate_range)
+#model.fit([metafeatures_matrix, model_choice_matrix, performance_matrix], Y, epochs=150, batch_size=max_length)

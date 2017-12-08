@@ -3,10 +3,13 @@
 import numpy as np
 import json
 import time
+import sys
 # from pprint import pprint
 from autosklearn.pipeline.classification import SimpleClassificationPipeline
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.model_selection import KFold
+
+performance_keys = ["train_accuracy_score", "test_accuracy_score", "train_log_loss", "test_log_loss"]
 
 def get_models_performance(reproduce_num, data_set_idx):
     X = np.loadtxt('Data_Set/X_' + str(data_set_idx))
@@ -19,7 +22,7 @@ def get_models_performance(reproduce_num, data_set_idx):
     with open(tried_models_filename) as fp:
         models = json.load(fp)
         reproduce_num_act = min(len(models), reproduce_num)
-        for i in range(1, len(models) + 1):
+        for i in range(1, reproduce_num_act + 1):
             model = models[str(i)]
             #print(model)
             train_accuracy_score = []
@@ -67,10 +70,33 @@ def get_training_duration(data_set_idx):
                 duration[info['num_run']] = info['duration']
     return duration
 
+def encode_performance_of_model(data_set_idx):
+    performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
+    performance_json = {}
+    with open(performance_json_filename) as fp:
+        performance_json = json.load(fp)
+    performance_metrics_matrix = []
+    #reproduce_num_act = min(len(performance_json), reproduce_num)
+    for i in range(len(performance_json)):
+        performance_single_json = performance_json[str(i+1)]
+        performance_vector = []
+        for key in performance_keys:
+            performance_vector.append(performance_single_json[key])
+        performance_metrics_matrix.append(performance_vector)
+    #print(np.array(performance_metrics_matrix))
+    performance_matrix_filename = "./log/classifier_log" + str(data_set_idx) + "/encode_reproduce_performance_matrix" + str(data_set_idx) + ".txt"
+    np.savetxt(performance_matrix_filename, performance_metrics_matrix)
+
 def test():
     for i in range(1):
         get_models_performance(20, i)
         
         
-#if __name__ == "__main__":
-#    test()
+if __name__ == "__main__":
+    for i in range(int(sys.argv[1]), int(sys.argv[2])):
+        try:
+            encode_performance_of_model(i)
+        except Exception as err:
+            print(" cannot encode performances json file to matrix txt file for data index:" + str(i))
+            print("EXCEPTION {0}".format(err))
+            pass

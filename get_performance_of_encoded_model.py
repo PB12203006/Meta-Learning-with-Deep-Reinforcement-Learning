@@ -3,11 +3,13 @@
 import numpy as np
 import json
 import time
+import sys
 from get_autosklean_tried_models_hyperparameters import model_hyperparameters_list
 from autosklearn.pipeline.classification import SimpleClassificationPipeline
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.model_selection import KFold
 
+performance_keys = ["train_accuracy_score", "test_accuracy_score", "train_log_loss", "test_log_loss"]
 
 def reverse_model_hyperparameters_list():
     # global model_hyperparameters_list
@@ -136,21 +138,39 @@ def get_performance_of_encoded_model(data_set_idx, encoded_all_model_hyperparame
                          "test_log_loss" : np.mean(test_log_loss),
                          "duration" : duration/5}
            
-    performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/rnn_models_performance" + str(data_set_idx) + ".json"
+    performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
     with open(performance_json_filename, 'w') as fp:
         json.dump(models_performance, fp)
     return models_performance
 
-def test():
-    for i in range(1,10):
-        tried_models_hyperparameters_encode_filename = "./log/classifier_log" + str(i) + "/encoded_tried_models_hyperparameters_for_dataset" + str(i) + ".txt"
-        encoded_all_model_hyperparameters = np.loadtxt(tried_models_hyperparameters_encode_filename)
-        tried_models_filename = "./log/classifier_log" + str(i) + "/tried_models_for_dataset" + str(i) + ".json"
-        json_model = {}
-        with open(tried_models_filename) as fp:
-            json_model = json.load(fp)
-        get_performance_of_encoded_model(i, encoded_all_model_hyperparameters, json_model)
-        
-        
+def save_json_performance_of_encoded_model(i):
+    tried_models_hyperparameters_encode_filename = "./log/classifier_log" + str(i) + "/encoded_tried_models_hyperparameters_for_dataset" + str(i) + ".txt"
+    encoded_all_model_hyperparameters = np.loadtxt(tried_models_hyperparameters_encode_filename)
+    tried_models_filename = "./log/classifier_log" + str(i) + "/tried_models_for_dataset" + str(i) + ".json"
+    json_model = {}
+    with open(tried_models_filename) as fp:
+        json_model = json.load(fp)
+    get_performance_of_encoded_model(i, encoded_all_model_hyperparameters, json_model)
+    
+def encode_performance_of_model(data_set_idx):
+    performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
+    performance_json = {}
+    with open(performance_json_filename) as fp:
+        performance_json = json.load(fp)
+    performance_metrics_matrix = []
+    #reproduce_num_act = min(len(performance_json), reproduce_num)
+    for i in range(len(performance_json)):
+        performance_single_json = performance_json[str(i+1)]
+        performance_vector = []
+        for key in performance_keys:
+            performance_vector.append(performance_single_json[key])
+        performance_metrics_matrix.append(performance_vector)
+    print(np.array(performance_metrics_matrix))
+    performance_matrix_filename = "./log/classifier_log" + str(data_set_idx) + "/encode_reproduce_performance_matrix" + str(data_set_idx) + ".txt"
+    np.savetxt(performance_matrix_filename, performance_metrics_matrix)
+
+  
 if __name__ == "__main__":
-    test()
+    for i in range(int(sys.argv[1]), int(sys.argv[2])):
+        save_json_performance_of_encoded_model(i)
+        

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
+import os
+import sys
+import numpy as np
 
 '''
 dict_keys:
@@ -44,6 +47,8 @@ dict_keys:
     'KurtosisMin'
 '''
 
+metadata_dict_keys = ['ClassEntropy', 'SymbolsSum', 'SymbolsSTD', 'SymbolsMean', 'SymbolsMax', 'SymbolsMin', 'ClassProbabilitySTD', 'ClassProbabilityMean', 'ClassProbabilityMax', 'ClassProbabilityMin', 'InverseDatasetRatio', 'DatasetRatio', 'RatioNominalToNumerical', 'RatioNumericalToNominal', 'NumberOfCategoricalFeatures', 'NumberOfNumericFeatures', 'NumberOfMissingValues', 'NumberOfFeaturesWithMissingValues', 'NumberOfInstancesWithMissingValues', 'NumberOfFeatures', 'NumberOfClasses', 'NumberOfInstances', 'LogInverseDatasetRatio', 'LogDatasetRatio', 'PercentageOfMissingValues', 'PercentageOfFeaturesWithMissingValues', 'PercentageOfInstancesWithMissingValues', 'LogNumberOfFeatures', 'LogNumberOfInstances', 'LandmarkRandomNodeLearner', 'SkewnessSTD', 'SkewnessMean', 'SkewnessMax', 'SkewnessMin', 'KurtosisSTD', 'KurtosisMean', 'KurtosisMax', 'KurtosisMin']
+
 def parse_num_from_str(s):
     try:
         return int(s)
@@ -72,4 +77,32 @@ def get_metadata_from_log(data_set_num):
         with open(metafeatures_filename, 'w') as fp:
             json.dump(metafeatures, fp)
     return metafeatures
-                 
+
+def encode_metadata_vector(data_set_index):
+    
+    #np.savetxt('Data_Set/X_' + str(data_set_index), X)
+    #np.savetxt('Data_Set/y_' + str(data_set_index), y)
+    metafeatures_filename = "./log/classifier_log" + str(data_set_index) + "/metafeatures.json"
+    metafeatures = {}
+    with open(metafeatures_filename) as mf:
+        metafeatures = json.load(mf)
+    metafeatures_vector = []
+    for key in metadata_dict_keys:
+        if key in metafeatures:
+            metafeatures_vector.append(metafeatures[key])
+    metafeatures_vector_filename = './log/classifier_log' + str(data_set_index) + '/metafeatures_vector.txt' 
+    #with open(metafeatures_vector_filename, 'w') as mv:
+    np.savetxt(metafeatures_vector_filename, metafeatures_vector)
+    return metafeatures_vector
+        
+    
+if __name__ == "__main__":
+    generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
+    for data_set_index in generate_range:
+        try:
+            encode_metadata_vector(data_set_index)
+        except Exception as err:
+            print("can not encode metadata of index: " + str(data_set_index))
+            print("EXCEPTION {0}".format(err))
+            pass
+    
