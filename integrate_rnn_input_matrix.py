@@ -6,6 +6,8 @@ run this python script to integrate all encoded data to matrix as input for RNN
 
 """
 import numpy as np
+import traceback
+import sys
 
 def integrate_encoded_data_for_one_dataset(data_set_index):
     metafeatures_vector = []
@@ -38,35 +40,33 @@ def integrate_encoded_data_for_one_dataset(data_set_index):
     
 
 def integrate_encoded_data_for_datasets(dataset_range):
-    metafeatures_matrix = None
-    model_choice_matrix = None
-    performance_matrix = None
+    metafeatures_matrix = []
+    input_model_choice_matrix = []
+    predict_model_choice_matrix = []
+    input_performance_matrix = []
     for i in dataset_range:
         try:
             single_metafeatures_matrix, single_model_choice_matrix, single_performance_matrix = integrate_encoded_data_for_one_dataset(i)
-            if metafeatures_matrix:
-                np.concatenate((np.array(metafeatures_matrix),single_metafeatures_matrix),axis=0)
-            else:
-                metafeatures_matrix = single_metafeatures_matrix
             
-            if model_choice_matrix:
-                np.concatenate((model_choice_matrix,single_model_choice_matrix),axis=0)
-            else:
-                model_choice_matrix = single_model_choice_matrix
+            metafeatures_matrix.append(single_metafeatures_matrix)
+            
+            
+            input_model = np.concatenate((np.zeros((1,17)), single_model_choice_matrix[:-1]),axis=0)
+            input_model_choice_matrix.append(input_model)
+            predict_model_choice_matrix.append(single_model_choice_matrix)
                 
-            if performance_matrix:
-                np.concatenate((performance_matrix,single_performance_matrix),axis=0)
-            else:
-                performance_matrix = single_performance_matrix
+            input_performance = np.concatenate((np.zeros((1,4)), single_performance_matrix[:-1]),axis=0)
+            input_performance_matrix.append(input_performance)
             
         except Exception as err:
             print("ERROR occuerred when process dataset #{0}".format(i))
             print("ERROR: {0}".format(err))
             pass
-    print(np.array(performance_matrix).shape)
-    return metafeatures_matrix, model_choice_matrix, performance_matrix
+    #print(np.array(input_performance_matrix).shape)
+    return np.array(metafeatures_matrix), np.array(input_model_choice_matrix), np.array(predict_model_choice_matrix), np.array(input_performance_matrix)
 
-generate_range = range(0,10)
-integrate_encoded_data_for_datasets(generate_range)
+if __name__ == '__main__':
+    generate_range = range(0,5)
+    integrate_encoded_data_for_datasets(generate_range)
 
     

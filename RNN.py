@@ -111,9 +111,9 @@ MODEL CHOICE
 12 - preprocessor:pca:keep_variance
 13 - preprocessor:pca:whiten : True/False
 
-14 - classifier:bernoulli_nb:alpha
+14 - classifier:bernoulli_nb:alpha      log10
 15 - classifier:bernoulli_nb:fit_prior : True/False
-16 - classifier:qda:reg_param
+16 - classifier:qda:reg_param    log10
 
 """
 
@@ -228,15 +228,16 @@ def bernoulli_nb_param_loss_(y_true, y_pred):
     bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=1-clf_bernoulli_nb_used)
     return bernoulli_nb_params_loss
 
-max_length = 20 # batch size
-meta_statistics_input_layer = Input(shape=(max_length, 38)) # meta_statistics_input num
-x_last_input_layer = Input(shape=(max_length, 17))
-feedback_input_layer = Input(shape=(max_length, 4)) # 4: training testing loss accuracy
+max_length = 20 # sequence length
+meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
+x_last_input_layer = Input(shape=(None, 17))
+feedback_input_layer = Input(shape=(None , 4)) # 4: training testing loss accuracy
 meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
 x_last_in_layer = Dense(10, activation='sigmoid')(x_last_input_layer)
 feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
 input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
 input_agg = Dense(10, activation='sigmoid')(input_agg)
+#input_agg = Input()
 predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
 # LSTM INPUT ONE STEP GET ONE OUT, not input all
 predictions = Dense(10, activation='sigmoid')(predictions)
@@ -247,5 +248,5 @@ model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choi
 model.summary()
 
 generate_range = range(0,5)
-metafeatures_matrix, model_choice_matrix, performance_matrix = integrate_encoded_data_for_datasets(generate_range)
-#model.fit([metafeatures_matrix, model_choice_matrix, performance_matrix], Y, epochs=150, batch_size=max_length)
+metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
+model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=150, batch_size=max_length)
