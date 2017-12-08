@@ -62,11 +62,11 @@ def integrate_encoded_data_for_datasets(dataset_range):
             print("ERROR occuerred when process dataset #{0}".format(i))
             print("ERROR: {0}".format(err))
             pass
-    #print(np.array(input_performance_matrix).shape)
+    print(np.array(input_performance_matrix).shape)
     return np.array(metafeatures_matrix), np.array(input_model_choice_matrix), np.array(predict_model_choice_matrix), np.array(input_performance_matrix)
 
 if __name__ == '__main__':
-    generate_range = range(0,5)
+    generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
     integrate_encoded_data_for_datasets(generate_range)
 
     

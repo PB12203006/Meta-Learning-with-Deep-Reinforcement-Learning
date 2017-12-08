@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 import keras
+import sys
 import numpy as np
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -108,12 +109,12 @@ MODEL CHOICE
 10 - one_hot_encoding:use_minimum_fraction: True/False
 11 - one_hot_encoding:minimum_fraction
 
-12 - preprocessor:pca:keep_variance
+12 - preprocessor:pca:keep_variance   [0.5, 0.9999]
 13 - preprocessor:pca:whiten : True/False
 
-14 - classifier:bernoulli_nb:alpha      log10
+14 - classifier:bernoulli_nb:alpha    [0.01, 100.0]
 15 - classifier:bernoulli_nb:fit_prior : True/False
-16 - classifier:qda:reg_param    log10
+16 - classifier:qda:reg_param    [0.0, 1.0]
 
 """
 
@@ -140,7 +141,12 @@ def sigmoid_binary_loss_with_logits(y_true, y_pred, dimension, weights):
 def square_params_loss(y_true, y_pred, dimensions, weights):
     params_true = tf.gather(y_true, dimensions, axis=2)
     params_pred = tf.gather(y_pred, dimensions, axis=2)
-    return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(params_true - params_pred), axis=2), weights)) / len(dimensions)
+    
+    if 14 in dimensions:
+        print(dimensions)
+        return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(tf.log(params_true)/tf.log(10.0) - tf.log(params_pred)/tf.log(10.0)), axis=2), weights)) / len(dimensions)
+    else:
+        return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(params_true - params_pred), axis=2), weights)) / len(dimensions)
 
 #Last Layer comes in w \out any activation
 def customized_loss(y_true, y_pred):
@@ -202,20 +208,23 @@ def model_choice_loss_(y_true, y_pred):
     return model_choice_loss
 
 def preprocessor_choice_accuracy_(y_true, y_pred):
-    true_labels = tf.gather(y_true, [8], axis=2)
-    pred_labels = tf.gather(y_true, [8], axis=2)
+    true_labels = tf.gather(y_true, 8, axis=2)
+    pred_labels = tf.gather(y_pred, 8, axis=2)
     accuracy, o = tf.metrics.accuracy(true_labels, pred_labels)
     return accuracy
 
 def model_choice_accuracy_(y_true, y_pred):
-    true_labels = tf.gather(y_true, [9], axis=2)
-    pred_labels = tf.gather(y_true, [9], axis=2)
+    true_labels = tf.gather(y_true, 9, axis=2)
+    pred_labels = tf.gather(y_pred, 9, axis=2)
     accuracy, o = tf.metrics.accuracy(true_labels, pred_labels)
     return accuracy
 
 def pca_param_loss_(y_true, y_pred):
     clf_pca_used = tf.gather(y_true, 8, axis=2)
-    pca_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used)
+    pca_variance_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used )
+    pca_whiten_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 13, weights=clf_pca_used)
+    pca_loss = pca_variance_loss + pca_whiten_loss
+    #pca_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used)
     return pca_loss
 
 def qda_param_loss_(y_true, y_pred):
@@ -224,29 +233,32 @@ def qda_param_loss_(y_true, y_pred):
     return qda_loss
 
 def bernoulli_nb_param_loss_(y_true, y_pred):
-    clf_bernoulli_nb_used = tf.gather(y_true, 9, axis=2) # 0 - bernoulli_nb ?
-    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=1-clf_bernoulli_nb_used)
-    return bernoulli_nb_params_loss
+    clf_bernoulli_nb_used = 1 - tf.gather(y_true, 9, axis=2) # 0 - bernoulli_nb ?
+    bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used)
+    bernoulli_nb_fit_prior_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 15, weights=clf_bernoulli_nb_used)
+    bernoulli_nb_loss = bernoulli_nb_fit_prior_loss + bernoulli_nb_params_loss
+    #bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used)
+    return bernoulli_nb_loss
 
 max_length = 20 # sequence length
 meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
 x_last_input_layer = Input(shape=(None, 17))
-feedback_input_layer = Input(shape=(None , 4)) # 4: training testing loss accuracy
+feedback_input_layer = Input(shape=(None, 4)) # 4: training testing loss accuracy
 meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
 x_last_in_layer = Dense(10, activation='sigmoid')(x_last_input_layer)
 feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
 input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
 input_agg = Dense(10, activation='sigmoid')(input_agg)
-#input_agg = Input()
+
 predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
 # LSTM INPUT ONE STEP GET ONE OUT, not input all
 predictions = Dense(10, activation='sigmoid')(predictions)
 predictions = Dense(17, activation=None)(predictions)
 model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_input_layer], outputs=predictions)
 # add pca loss, continueous: square_params_loss
-model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, preprocessor_choice_accuracy_, model_choice_accuracy_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_])
+model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_]) #preprocessor_choice_accuracy_, model_choice_accuracy_, 
 model.summary()
 
-generate_range = range(0,5)
+generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
 metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
-model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=150, batch_size=max_length)
+model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=10, batch_size=max_length)
