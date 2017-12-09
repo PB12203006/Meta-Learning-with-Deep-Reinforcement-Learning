@@ -16,35 +16,11 @@ from keras import optimizers
 from keras.models import Model, load_model
 from keras import metrics
 from integrate_rnn_input_matrix import integrate_encoded_data_for_datasets
-#from Load_and_transform_data import *
-
-#Dimension 0: 0 if none, 1 if weighting
-#Dimension 1: bernoulli_nb
-#Dimension 2: libsvm_svc
-#Dimension 3: qda
-#Dimension 4: imputation mean
-#Dimension 5: imputation median
-#Dimension 6: imputation mode
-#Dimension 7: one_hot_use_minimum_fraction
-#Dimension 8: preprocessor (always 0 here)
-#Dimension 9: min-max
-#Dimension 10: none
-#Dimension 11: normalize
-#Dimension 12: standardize
-#Dimension 13: bernoulli, alpha
-#Dimension 14: bernoulli, fit prior
-#Dimension 15: svm, C
-#Dimension 16: svm, gamma
-#Dimension 17: svm, rbf
-#Dimension 18: svm, poly
-#Dimension 19: svm, sigmoid
-#Dimension 20: svm, max_iter
-#Dimension 21: svm, shrinking. 0 if True
-#Dimension 22: svm, tol
-#Dimension 23: qda, reg
-#Dimension 24: one-hot mean fraction
-#Dimension 25: svm, coef0
-#Dimension 26: svm, degree
+from sample_model_choice import sample_model_prediction
+from get_performance_of_encoded_model import get_performance_of_encoded_model
+from get_metadata import get_metadata
+from keras.callbacks import ModelCheckpoint
+from Generate_Data_Set import generate_data_set
 """
 METADATA:
 
@@ -58,7 +34,7 @@ METADATA:
 7 - 'ClassProbabilityMean',
 8 - 'ClassProbabilityMax',
 9 - 'ClassProbabilityMin',
-10 - 'InverseDatasetRatio',
+0 - 'InverseDatasetRatio',
 11 - 'DatasetRatio',
 12 - 'RatioNominalToNumerical',
 13 - 'RatioNumericalToNominal',
@@ -138,6 +114,7 @@ def sigmoid_binary_loss_with_logits(y_true, y_pred, dimension, weights):
     label_pred_logits = tf.gather(y_pred, dimension, axis=2)
     return tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(labels=label_true, logits=label_pred_logits) * weights)
 
+
 def square_params_loss(y_true, y_pred, dimensions, weights):
     params_true = tf.gather(y_true, dimensions, axis=2)
     params_pred = tf.gather(y_pred, dimensions, axis=2)
@@ -160,32 +137,32 @@ def customized_loss(y_true, y_pred):
 
     #Dimension 0 balance
     balance_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 0, weights=balance_loss_weight)
-
+    #print(sess.run(balance_loss))
     #Dimesnsion 1, 2, 3 imputation choice
     imputation_choice_loss = cross_entropy_with_logits(y_true, y_pred, [1,2,3], weights=imputation_choice_loss_weight)
-
+    #print(sess.run(imputation_choice_loss))
     #Dimension 4,5,6,7 rescale choice
     rescale_loss = cross_entropy_with_logits(y_true, y_pred, [4,5,6,7], weights=rescale_loss_weight)
-
+    #print(sess.run(rescale_loss))
     #Dimension 8 preprocessor choice
-    preprocessor_choice_loss = cross_entropy_with_logits(y_true, y_pred, [8], weights=preprocessor_choice_loss_weight)
-
+    preprocessor_choice_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, [8], weights=preprocessor_choice_loss_weight)
+    #print(sess.run(preprocessor_choice_loss))
     #Dimension 9 classifier choice
-    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [9], weights=model_choice_loss_weight)
-
+    model_choice_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, [9], weights=model_choice_loss_weight)
+    #print(sess.run(model_choice_loss))
     #Dimension 10, 11 one hot - irrelevant
 
     #Dimension 12 preprocessor pca
     pca_variance_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used * pca_loss_weight)
     pca_whiten_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 13, weights=clf_pca_used * pca_loss_weight)
     pca_loss = pca_variance_loss + pca_whiten_loss
+    #print(sess.run(pca_loss))
 
     #Dimension 14
     bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used*bernoulli_nb_loss_weight)
     #Dimension 15
     bernoulli_nb_fit_prior_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 15, weights=clf_bernoulli_nb_used * bernoulli_nb_loss_weight)
     bernoulli_nb_loss = bernoulli_nb_fit_prior_loss + bernoulli_nb_params_loss
-
     #Dimension 16
     qda_loss = square_params_loss(y_true, y_pred, [16], weights = clf_qda_used * qda_loss_weight)
 
@@ -195,11 +172,11 @@ def customized_loss(y_true, y_pred):
     return loss
 
 def preprocessor_choice_loss_(y_true, y_pred):
-    preprocessor_choice_loss = cross_entropy_with_logits(y_true, y_pred, [8], weights=1)
+    preprocessor_choice_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, [8], weights=1)
     return preprocessor_choice_loss
 
 def model_choice_loss_(y_true, y_pred):
-    model_choice_loss = cross_entropy_with_logits(y_true, y_pred, [9], weights=1)
+    model_choice_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, [9], weights=1)
     return model_choice_loss
 
 def preprocessor_choice_accuracy_(y_true, y_pred):
@@ -215,7 +192,6 @@ def model_choice_accuracy_(y_true, y_pred):
     return accuracy
 
 def pca_param_loss_(y_true, y_pred):
-    clf_pca_used = tf.gather(y_true, 8, axis=2)
     pca_variance_loss = square_params_loss(y_true, y_pred, [12], weights = clf_pca_used )
     pca_whiten_loss = sigmoid_binary_loss_with_logits(y_true, y_pred, 13, weights=clf_pca_used)
     pca_loss = pca_variance_loss + pca_whiten_loss
@@ -235,7 +211,7 @@ def bernoulli_nb_param_loss_(y_true, y_pred):
     #bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used)
     return bernoulli_nb_loss
 
-def rnn_train(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix):
+def get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix):
     max_length = 20 # sequence length
     meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
     x_last_input_layer = Input(shape=(None, 17))
@@ -245,27 +221,70 @@ def rnn_train(metafeatures_matrix, input_model_choice_matrix, input_performance_
     feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
     input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
     input_agg = Dense(10, activation='sigmoid')(input_agg)
-    
+
     predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
     # LSTM INPUT ONE STEP GET ONE OUT, not input all
     predictions = Dense(10, activation='sigmoid')(predictions)
     predictions = Dense(17, activation=None)(predictions)
     model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_input_layer], outputs=predictions)
+
     # add pca loss, continueous: square_params_loss
-    model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_]) #preprocessor_choice_accuracy_, model_choice_accuracy_, 
+    #model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_]) #preprocessor_choice_accuracy_, model_choice_accuracy_, 
+    model.compile(loss=customized_loss, optimizer='Adam')
     model.summary()
-    
-    hist = model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=10, batch_size=max_length, validation_split=0.2)
-    print(hist.history)
     
     return model
 
+def evaluate_action_on_dataset(dataset, action):
+    model_choice = sample_model_prediction(action)
+    model_performance = get_performance_of_encoded_model(dataset, model_choice)
+    return model_choice, model_performance, model_performance[1]
+
+
+def evaluate_policy_network_on_dataset(rnn_model, dataset):
+    X, y = dataset
+    metadata = get_metadata(dataset, 24601)
+    assert(metadata.shape == (38,))
+    num_steps = 5
+    model_choice_history = [np.array([0] * 17)]
+    performance_history = [np.array([0] * 4)]
+    result_rnn = []
+    for _ in range(num_steps):
+        meta_data_history_in = np.tile(metadata, (1, _ + 1, 1))
+        performance_history_in = np.array([performance_history])
+        model_choice_history_in = np.array([model_choice_history])
+        action = rnn_model.predict([meta_data_history_in, model_choice_history_in, performance_history_in])[0][-1]
+        model_chosen = sample_model_prediction(action)
+        model_performance = get_performance_of_encoded_model(dataset, model_chosen)
+        accuracy = model_performance[1]
+        #model_performance_array = np.array([model_performance[x] for x in model_performance])
+        #model_chosen, model_performance, accuracy = evaluate_action_on_dataset(dataset, action)
+        assert(model_chosen.shape == (17,))
+        assert(model_performance.shape == (4,))
+        model_choice_history.append(model_chosen)
+        performance_history.append(model_performance)
+        print(accuracy)
+        result_rnn.append(accuracy)
+
+    #Evaluate randomized search and autosklearn
+    #result_random = []
+    #result_autosklearn = []
+    print(result_rnn)
+    return result_rnn
+    
+
 if __name__ == '__main__':
-    generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
-    metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
-    model = rnn_train(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
-    X = [metafeatures_matrix[:10], input_model_choice_matrix[:10], input_performance_matrix[:10]]
-    pred = model.predict(X)
-    print(pred[:,:,8:10])
+    #generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
+    #metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
+    metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = np.load('metafeatures_matrix.npy'), np.load('input_model_choice_matrix.npy'), np.load('predict_model_choice_matrix.npy'), np.load('input_performance_matrix.npy')
+    rnn_model = get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
+    #checkpoint = ModelCheckpoint('rnn_rz', monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+    #model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=1000, batch_size=64, validation_split=0.2, callbacks= [checkpoint])
+    rnn_model.load_weights('rnn_rz')
+    N = int(np.random.randint(100) * 10 + 100)
+    D = int(np.random.random() * 0.8 * N + 5)
+    X, y, probas = generate_data_set(N, D)
+    result = evaluate_policy_network_on_dataset(rnn_model, (X, y))
+    #print(evaluate_policy_network_on_dataset(model, [X, y]))
 
 
