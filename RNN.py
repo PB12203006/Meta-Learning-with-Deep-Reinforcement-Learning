@@ -141,12 +141,7 @@ def sigmoid_binary_loss_with_logits(y_true, y_pred, dimension, weights):
 def square_params_loss(y_true, y_pred, dimensions, weights):
     params_true = tf.gather(y_true, dimensions, axis=2)
     params_pred = tf.gather(y_pred, dimensions, axis=2)
-    
-    if 14 in dimensions:
-        print(dimensions)
-        return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(tf.log(params_true)/tf.log(10.0) - tf.log(params_pred)/tf.log(10.0)), axis=2), weights)) / len(dimensions)
-    else:
-        return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(params_true - params_pred), axis=2), weights)) / len(dimensions)
+    return tf.reduce_sum(tf.multiply(tf.reduce_sum(tf.square(params_true - params_pred), axis=2), weights)) / len(dimensions)
 
 #Last Layer comes in w \out any activation
 def customized_loss(y_true, y_pred):
@@ -240,25 +235,37 @@ def bernoulli_nb_param_loss_(y_true, y_pred):
     #bernoulli_nb_params_loss = square_params_loss(y_true, y_pred, [14], weights=clf_bernoulli_nb_used)
     return bernoulli_nb_loss
 
-max_length = 20 # sequence length
-meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
-x_last_input_layer = Input(shape=(None, 17))
-feedback_input_layer = Input(shape=(None, 4)) # 4: training testing loss accuracy
-meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
-x_last_in_layer = Dense(10, activation='sigmoid')(x_last_input_layer)
-feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
-input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
-input_agg = Dense(10, activation='sigmoid')(input_agg)
+def rnn_train(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix):
+    max_length = 20 # sequence length
+    meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
+    x_last_input_layer = Input(shape=(None, 17))
+    feedback_input_layer = Input(shape=(None, 4)) # 4: training testing loss accuracy
+    meta_statistics_in_layer = Dense(10, activation='sigmoid')(meta_statistics_input_layer)
+    x_last_in_layer = Dense(10, activation='sigmoid')(x_last_input_layer)
+    feedback_in_layer = Dense(10, activation='sigmoid')(feedback_input_layer)
+    input_agg = Add()([meta_statistics_in_layer, x_last_in_layer, feedback_in_layer])
+    input_agg = Dense(10, activation='sigmoid')(input_agg)
+    
+    predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
+    # LSTM INPUT ONE STEP GET ONE OUT, not input all
+    predictions = Dense(10, activation='sigmoid')(predictions)
+    predictions = Dense(17, activation=None)(predictions)
+    model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_input_layer], outputs=predictions)
+    # add pca loss, continueous: square_params_loss
+    model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_]) #preprocessor_choice_accuracy_, model_choice_accuracy_, 
+    model.summary()
+    
+    hist = model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=10, batch_size=max_length, validation_split=0.2)
+    print(hist.history)
+    
+    return model
 
-predictions = LSTM(10, recurrent_dropout=0.1, return_sequences=True)(input_agg) #LSTM: layer
-# LSTM INPUT ONE STEP GET ONE OUT, not input all
-predictions = Dense(10, activation='sigmoid')(predictions)
-predictions = Dense(17, activation=None)(predictions)
-model = Model(inputs=[meta_statistics_input_layer, x_last_input_layer, feedback_input_layer], outputs=predictions)
-# add pca loss, continueous: square_params_loss
-model.compile(loss=customized_loss, optimizer='Adam', metrics=[preprocessor_choice_loss_, model_choice_loss_, pca_param_loss_, qda_param_loss_, bernoulli_nb_param_loss_]) #preprocessor_choice_accuracy_, model_choice_accuracy_, 
-model.summary()
+if __name__ == '__main__':
+    generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
+    metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
+    model = rnn_train(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
+    X = [metafeatures_matrix[:10], input_model_choice_matrix[:10], input_performance_matrix[:10]]
+    pred = model.predict(X)
+    print(pred[:,:,8:10])
 
-generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
-metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = integrate_encoded_data_for_datasets(generate_range)
-model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=10, batch_size=max_length)
+
