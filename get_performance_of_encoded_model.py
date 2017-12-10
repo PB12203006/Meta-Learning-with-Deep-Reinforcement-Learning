@@ -23,11 +23,8 @@ def reverse_model_hyperparameters_list():
     return reversed_model_hyperparameters_list
 
 def decode_model(encoded_model_hyperparameters):
-    """
-    Encode model and hyperparameters into number list
-    """
     model_hyperparameters_decode_list = reverse_model_hyperparameters_list()
-    #print(model_hyperparameters_decode_list)
+    #print(encoded_model_hyperparameters)
     decoded_model = {}
     idx = 0
     for i in range(6):
@@ -44,7 +41,11 @@ def decode_model(encoded_model_hyperparameters):
                 idx += 1
     one_hot_encoding_min_fraction = decoded_model['one_hot_encoding:use_minimum_fraction']
     if one_hot_encoding_min_fraction == 'True':
-        decoded_model['one_hot_encoding:minimum_fraction'] = encoded_model_hyperparameters[idx]
+        decoded_model['one_hot_encoding:minimum_fraction'] = float(encoded_model_hyperparameters[idx])
+        assert(decoded_model['one_hot_encoding:minimum_fraction']>0.0001)
+        assert(decoded_model['one_hot_encoding:minimum_fraction']<0.5)
+        assert(isinstance(decoded_model['one_hot_encoding:minimum_fraction'], float))
+        #print(decoded_model)
     idx += 1
 
     #decoded_model['preprocessor:__choice__'] = values[int(encoded_model_hyperparameters[idx])]
@@ -59,6 +60,15 @@ def decode_model(encoded_model_hyperparameters):
     start = 9
     end = start + 3
     idx, decoded_model = parse_encode_field(classifier, idx, start, end, model_hyperparameters_decode_list, encoded_model_hyperparameters, decoded_model)
+    if 'preprocessor:pca:keep_variance' in decoded_model:
+        decoded_model['preprocessor:pca:keep_variance'] = float(decoded_model['preprocessor:pca:keep_variance'])
+        assert(isinstance(decoded_model['preprocessor:pca:keep_variance'], float))
+    if 'classifier:bernoulli_nb:alpha' in decoded_model:
+        decoded_model['classifier:bernoulli_nb:alpha'] = float(decoded_model['classifier:bernoulli_nb:alpha'])
+        assert(isinstance(decoded_model['classifier:bernoulli_nb:alpha'], float))
+    if 'classifier:qda:reg_param' in decoded_model:
+        decoded_model['classifier:qda:reg_param'] = float(decoded_model['classifier:qda:reg_param'])
+        assert(isinstance(decoded_model['classifier:qda:reg_param'], float))
     return decoded_model
     
 def parse_encode_field(keyword, idx, start, end, model_hyperparameters_decode_list, encoded_model_hyperparameters, decoded_model):
@@ -92,16 +102,50 @@ def parse_encode_field(keyword, idx, start, end, model_hyperparameters_decode_li
             decoded_model['classifier:libsvm_svc:coef0'] = float(encoded_model_hyperparameters[idx])
     #print(decoded_model)
     '''
-
-def get_performance_of_encoded_model(data_set_idx, encoded_all_model_hyperparameters, json_model):
+    
+def get_performance_of_encoded_model(data_set, encoded_model):
     """
-    Get model performance from encoded matrix
+    Get model performance from encoded vector
+    """
+    train_accuracy_score = []
+    test_accuracy_score = []
+    train_log_loss = []
+    test_log_loss = []
+    X, y = data_set
+    kf = KFold(n_splits=5, random_state=1, shuffle=True)
+    model = decode_model(encoded_model)
+    print('Model choice: {0}'.format(model))
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        
+        p = SimpleClassificationPipeline(config=model)
+        p.fit(X_train, y_train)
+        #scores = sklearn.model_selection.cross_validate(p, X, y, scoring=scoring, cv=5, return_train_score=True)
+        #print(scores)
+        y_train_pred = p.predict(X_train)
+        y_test_pred = p.predict(X_test)
+        train_accuracy_score.append(accuracy_score(y_train, y_train_pred))
+        test_accuracy_score.append(accuracy_score(y_test, y_test_pred))
+        train_log_loss.append(log_loss(y_train, y_train_pred))
+        test_log_loss.append(log_loss(y_test, y_test_pred))
+    model_performance = np.array([np.mean(train_accuracy_score), np.mean(test_accuracy_score), np.mean(train_log_loss), np.mean(test_log_loss)])
+    #print('Model Performance: {o}'.format(model_performance))
+    return model_performance
+    
+    
+
+def get_performance_of_range_encoded_models(data_set_idx, encoded_all_model_hyperparameters, json_model):
+    """
+    Get models performance from encoded matrix
     """
     X = np.loadtxt('Data_Set/X_' + str(data_set_idx))
     y = np.loadtxt('Data_Set/y_' + str(data_set_idx))
     probas = np.loadtxt('Data_Set/probas_' + str(data_set_idx))
     # X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
     models_performance = {}
+    #get_performance_of_encoded_model([X, y], encoded_all_model_hyperparameters[0])
+    print('-----------------------------------------------')
     for i in range(len(encoded_all_model_hyperparameters)):
         #model = models[str(i)]
         encoded_model = encoded_all_model_hyperparameters[i]
@@ -150,7 +194,7 @@ def save_json_performance_of_encoded_model(i):
     json_model = {}
     with open(tried_models_filename) as fp:
         json_model = json.load(fp)
-    get_performance_of_encoded_model(i, encoded_all_model_hyperparameters, json_model)
+    get_performance_of_range_encoded_models(i, encoded_all_model_hyperparameters, json_model)
     
 def encode_performance_of_model(data_set_idx):
     performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"

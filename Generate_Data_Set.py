@@ -44,6 +44,8 @@ def generate_true_basis(X):
 
 #generate a N*D feature set and N labels
 def generate_data_set(N, D):
+    import time
+    np.random.seed(seed=int(time.time()))
     X_init = generate_inputs(N, D)
     X = distort_X(X_init)
     X_true = generate_true_basis(X)

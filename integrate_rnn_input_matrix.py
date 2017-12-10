@@ -27,8 +27,9 @@ def integrate_encoded_data_for_one_dataset(data_set_index):
     performance_matrix = np.loadtxt(performance_matrix_filename)
     
     row_num = performance_matrix.shape[0]
-    if row_num != 30:
-        raise Exception('No PERFORMANCE txt file in dataset #' + str(data_set_index))
+    model_row_num = model_choice_matrix.shape[0]
+    if row_num != 30 or model_row_num < 30:
+        raise Exception('Models/Performance txt file row num!= 30 in dataset #' + str(data_set_index))
     if metafeatures_vector.shape[0] != 38:
         raise Exception('the number of metafeatures of data set #{0} is not 38'.format(data_set_index))
     
@@ -38,6 +39,9 @@ def integrate_encoded_data_for_one_dataset(data_set_index):
     # select models reproduced with performace
     model_choice_matrix = model_choice_matrix[:row_num]
     
+    print(np.array(metafeatures_matrix).shape)
+    print(np.array(model_choice_matrix).shape)
+    print(np.array(performance_matrix).shape)
     return metafeatures_matrix, model_choice_matrix, performance_matrix
     
 
@@ -49,7 +53,7 @@ def integrate_encoded_data_for_datasets(dataset_range):
     for i in dataset_range:
         try:
             single_metafeatures_matrix, single_model_choice_matrix, single_performance_matrix = integrate_encoded_data_for_one_dataset(i)
-            print('DATA_SET #' + str(i))
+            print('AFTER DATA_SET #' + str(i))
             
             metafeatures_matrix.append(single_metafeatures_matrix)
             
@@ -71,11 +75,16 @@ def integrate_encoded_data_for_datasets(dataset_range):
             print("ERROR occuerred when process dataset #{0}".format(i))
             print("ERROR: {0}".format(err))
             pass
+    print(np.array(metafeatures_matrix).shape)
+    print(np.array(input_model_choice_matrix).shape)
     print(np.array(input_performance_matrix).shape)
     return np.array(metafeatures_matrix), np.array(input_model_choice_matrix), np.array(predict_model_choice_matrix), np.array(input_performance_matrix)
 
 if __name__ == '__main__':
     generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
-    integrate_encoded_data_for_datasets(generate_range)
-
+    data1, data2, data3, data4 = integrate_encoded_data_for_datasets(generate_range)
+    #np.save('metafeatures_matrix',data1)
+    #np.save('input_model_choice_matrix',data2)
+    #np.save('predict_model_choice_matrix',data3)
+    #np.save('input_performance_matrix',data4)
     
