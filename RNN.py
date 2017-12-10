@@ -21,6 +21,7 @@ from get_performance_of_encoded_model import get_performance_of_encoded_model
 from get_metadata import get_metadata
 from keras.callbacks import ModelCheckpoint
 from Generate_Data_Set import generate_data_set
+import generate_random_model
 """
 METADATA:
 
@@ -104,6 +105,107 @@ MODEL PERFORMANCE
 
 """
 
+"""
+rnn_base: loss:
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+    
+"""
+"""
+rnn_bernoulli_nb : loss :
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 50
+    qda_loss_weight = 0.5
+"""
+
+"""
+rnn_qda : loss : 
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 50
+"""
+"""
+rnn_pca : loss : 
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 50
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
+"""
+rnn_model_choice : loss : 
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 50
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
+"""
+rnn_preprocessor_choice : loss:
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 50
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
+"""
+rnn_imputation_choice : loss :
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 10
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
+"""
+rnn_rescale : loss : 
+    balance_loss_weight = 0.01
+    rescale_loss_weight = 1
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
+"""
+rnn_balance : loss : 
+    balance_loss_weight = 5
+    rescale_loss_weight = 0.01
+    imputation_choice_loss_weight = 0.05
+    preprocessor_choice_loss_weight = 1
+    model_choice_loss_weight = 1
+    pca_loss_weight = 0.5
+    bernoulli_nb_loss_weight = 0.5
+    qda_loss_weight = 0.5
+"""
 def cross_entropy_with_logits(y_true, y_pred, dimensions, weights):
     choice_true = tf.gather(y_true, dimensions, axis=2)
     choice_pred_logits = tf.gather(y_pred, dimensions, axis=2)
@@ -235,17 +337,22 @@ def get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_ma
     
     return model
 
+def train_rnn(model_file_name='rnn0'):
+    metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = np.load('metafeatures_matrix.npy'), np.load('input_model_choice_matrix.npy'), np.load('predict_model_choice_matrix.npy'), np.load('input_performance_matrix.npy')
+    rnn_model = get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
+    rnn_save_name = model_file_name
+    checkpoint = ModelCheckpoint(model_file_name, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+    rnn_model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=1000, batch_size=64, validation_split=0.2, callbacks= [checkpoint])
+    return rnn_model
+
 def evaluate_action_on_dataset(dataset, action):
     model_choice = sample_model_prediction(action)
     model_performance = get_performance_of_encoded_model(dataset, model_choice)
     return model_choice, model_performance, model_performance[1]
 
-
-def evaluate_policy_network_on_dataset(rnn_model, dataset):
+def evaluate_policy_network_on_dataset(rnn_model, dataset, metadata, num_steps=10):
     X, y = dataset
-    metadata = get_metadata(dataset, 24601)
     assert(metadata.shape == (38,))
-    num_steps = 5
     model_choice_history = [np.array([0] * 17)]
     performance_history = [np.array([0] * 4)]
     result_rnn = []
@@ -254,16 +361,16 @@ def evaluate_policy_network_on_dataset(rnn_model, dataset):
         performance_history_in = np.array([performance_history])
         model_choice_history_in = np.array([model_choice_history])
         action = rnn_model.predict([meta_data_history_in, model_choice_history_in, performance_history_in])[0][-1]
-        model_chosen = sample_model_prediction(action)
-        model_performance = get_performance_of_encoded_model(dataset, model_chosen)
-        accuracy = model_performance[1]
+        #model_chosen = sample_model_prediction(action)
+        #model_performance = get_performance_of_encoded_model(dataset, model_chosen)
+        #accuracy = model_performance[1]
         #model_performance_array = np.array([model_performance[x] for x in model_performance])
-        #model_chosen, model_performance, accuracy = evaluate_action_on_dataset(dataset, action)
+        model_chosen, model_performance, accuracy = evaluate_action_on_dataset(dataset, action)
         assert(model_chosen.shape == (17,))
         assert(model_performance.shape == (4,))
         model_choice_history.append(model_chosen)
         performance_history.append(model_performance)
-        print(accuracy)
+        #print(accuracy)
         result_rnn.append(accuracy)
 
     #Evaluate randomized search and autosklearn
@@ -271,7 +378,45 @@ def evaluate_policy_network_on_dataset(rnn_model, dataset):
     #result_autosklearn = []
     print(result_rnn)
     return result_rnn
-    
+
+def accuracy_rnn_random_on_datasets(rnn_model, dataset_range_to, model_file_name):
+    generate_range = range(dataset_range_to)
+    rnn_results = []
+    random_results = []
+    num_steps = 10
+    for data_set_index in generate_range:
+        try:
+            # genetate data set
+            N = int(np.random.randint(100) * 10 + 100)
+            D = int(np.random.random() * 0.8 * N + 5)
+            X, y, probas = generate_data_set(N, D)
+
+            # try to get metadata
+            metadata = get_metadata((X, y), model_file_name)
+        except Exception as err:
+            print('ERROR occured when get metadata for dataset #{0}, ERROR: {1}'.format(data_set_index, err))
+            continue
+        
+        # rnn model accuracy
+        rnn_result = evaluate_policy_network_on_dataset(rnn_model, (X, y), metadata, num_steps)
+        print('RNN MODEL Test Accuracy for dataset: #{0} is : {1}'.format(data_set_index, rnn_result))
+        rnn_results.append(rnn_result)
+        
+        #random search model accuracy
+        random_result = []
+        for step in range(num_steps):
+            random_action = generate_random_model.generate()
+            model_chosen, model_performance, random_accuracy = evaluate_action_on_dataset((X, y), random_action)
+            random_result.append(random_accuracy)
+        print('RANDOM ACTION Test Accuracy for dataset: #{0} is : {1}'.format(data_set_index, random_result))
+        random_results.append(random_result)
+        
+    print('Average RNN Model test accuracy: {0}'.format(np.array(rnn_results).mean(0)))
+    print('Average RANDOM MODEL test accuracy: {0}'.format(np.array(random_results).mean(0)))
+    np.save(model_file_name + '_rnn_result',np.array(rnn_results).mean(0))
+    np.save(model_file_name + '_random_result', np.array(random_results).mean(0))
+    return rnn_results, random_results
+        
 
 if __name__ == '__main__':
     #generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
@@ -279,12 +424,13 @@ if __name__ == '__main__':
     metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = np.load('metafeatures_matrix.npy'), np.load('input_model_choice_matrix.npy'), np.load('predict_model_choice_matrix.npy'), np.load('input_performance_matrix.npy')
     rnn_model = get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
     #checkpoint = ModelCheckpoint('rnn_rz', monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-    #model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=1000, batch_size=64, validation_split=0.2, callbacks= [checkpoint])
-    rnn_model.load_weights('rnn_rz')
-    N = int(np.random.randint(100) * 10 + 100)
-    D = int(np.random.random() * 0.8 * N + 5)
-    X, y, probas = generate_data_set(N, D)
-    result = evaluate_policy_network_on_dataset(rnn_model, (X, y))
-    #print(evaluate_policy_network_on_dataset(model, [X, y]))
-
+    #rnn_model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=1000, batch_size=64, validation_split=0.2, callbacks= [checkpoint])
+    
+    model_file_name = './rnn_models/rnn_balance'
+    #rnn_model = train_rnn(model_file_name)
+    rnn_model.load_weights(model_file_name)
+    dataset_range_to = 20
+    rnn_results, random_results = accuracy_rnn_random_on_datasets(rnn_model, dataset_range_to, model_file_name)
+    
+    
 
