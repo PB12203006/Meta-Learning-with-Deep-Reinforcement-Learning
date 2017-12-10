@@ -1,10 +1,7 @@
 import sys
 import numpy as np
-<<<<<<< HEAD
 from get_performance_of_encoded_model import get_performance_of_encoded_model
 from Generate_Data_Set import generate_data_set
-=======
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
 
 """
 MODEL CHOICE
@@ -24,11 +21,7 @@ MODEL CHOICE
 9 - classifier:__choice__ : bernoulli_nb/qda
 
 10 - one_hot_encoding:use_minimum_fraction: True/False
-<<<<<<< HEAD
 11 - one_hot_encoding:minimum_fraction [0.0001, 0.5]
-=======
-11 - one_hot_encoding:minimum_fraction
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
 
 12 - preprocessor:pca:keep_variance   [0.5, 0.9999]
 13 - preprocessor:pca:whiten : True/False
@@ -66,11 +59,7 @@ def sample_softmax(y_hat, dimensions):
     y_hat[dimensions] = choice
     return y_hat
 
-<<<<<<< HEAD
 def sample_continuous(y_hat, dimension):
-=======
-def sample_continues(y_hat, dimension):
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
     sample_range = continueous_range[dimension]
     EPSILON = 1e-7
     if dimension == 14:
@@ -82,13 +71,10 @@ def sample_continues(y_hat, dimension):
     return y_hat
         
 def sample_model_prediction(model_dist):
-<<<<<<< HEAD
     '''
     input : predict model choice from rnn 
     return : model_choice
     '''
-=======
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
     model_choice = sample_binary(model_dist, 0)
     
     model_choice = sample_softmax(model_choice, [1,2,3])
@@ -100,8 +86,7 @@ def sample_model_prediction(model_dist):
     model_choice = sample_binary(model_choice, 9)
     
     model_choice = sample_binary(model_choice, 10)
-    
-<<<<<<< HEAD
+
     model_choice = sample_continuous(model_choice, 11)
     
     model_choice = sample_continuous(model_choice, 12)
@@ -169,26 +154,12 @@ def sample_model_choice_from_prob(model_probability):
     
     # 16: classifier:qda:reg_param    [0.0, 1.0]
     model_choice = sample_continuous(model_choice, 16)
-=======
-    model_choice = sample_continues(model_choice, 11)
-    model_choice[11] = 0.01 
-    model_choice = sample_continues(model_choice, 12)
-    
-    model_choice = sample_binary(model_choice, 13)
-    
-    model_choice = sample_continues(model_choice, 14)
-    
-    model_choice = sample_binary(model_choice, 15)
-    
-    model_choice = sample_continues(model_choice, 16)
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
-    
+
     return model_choice
 
 if __name__ == '__main__':
     model_dist = np.array([-0.30685335,  0.13222617,  0.31084996, -0.09449814,  0.22122033,  0.01977987,
   0.07629474, -0.43703952, -0.15832511, -0.03690121, -0.08069695,  0.56416631,
-<<<<<<< HEAD
   0.58806747, -0.2543076,   0.03425501, -0.34980315,  0.34526229])
     #print(sample_model_prediction(model_dist))
     
@@ -200,8 +171,5 @@ if __name__ == '__main__':
     X, y, probas = generate_data_set(N, D)
     
     print(get_performance_of_encoded_model((X,y), model_choice))
-=======
-  0.58806747, -0.2543076,   0.03425501, -0.34980315,  0.34526229,])
-    print(sample_model_prediction(model_dist))
->>>>>>> 5d99a96bdd372c357d6d4678c07065e394361ac7
+
     
