@@ -127,7 +127,7 @@ def get_performance_of_encoded_model(data_set, encoded_model, verbose=False):
     train_accuracy_score.append(accuracy_score(y_train, y_train_pred))
     test_accuracy_score.append(accuracy_score(y_test, y_test_pred))
     train_log_loss.append(log_loss(y_train, y_train_pred))
-        test_log_loss.append(log_loss(y_test, y_test_pred))
+    test_log_loss.append(log_loss(y_test, y_test_pred))
     model_performance = np.array([np.mean(train_accuracy_score), np.mean(test_accuracy_score), np.mean(train_log_loss), np.mean(test_log_loss)])
     #print('Model Performance: {o}'.format(model_performance))
     return model_performance
