@@ -7,7 +7,7 @@ import sys
 # from pprint import pprint
 from autosklearn.pipeline.classification import SimpleClassificationPipeline
 from sklearn.metrics import accuracy_score, log_loss
-from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split, KFold
 
 performance_keys = ["train_accuracy_score", "test_accuracy_score", "train_log_loss", "test_log_loss"]
 
@@ -29,29 +29,27 @@ def get_models_performance(reproduce_num, data_set_idx):
             test_accuracy_score = []
             train_log_loss = []
             test_log_loss = []
-            kf = KFold(n_splits=5, random_state=1, shuffle=True)
+            #kf = KFold(n_splits=5, random_state=1, shuffle=True)
             time_start = time.time()
-            for train_index, test_index in kf.split(X):
-                X_train, X_test = X[train_index], X[test_index]
-                y_train, y_test = y[train_index], y[test_index]
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, shuffle=True)
             
-                p = SimpleClassificationPipeline(config=model)
-                p.fit(X_train, y_train)
-                #scores = sklearn.model_selection.cross_validate(p, X, y, scoring=scoring, cv=5, return_train_score=True)
-                #print(scores)
-                y_train_pred = p.predict(X_train)
-                y_test_pred = p.predict(X_test)
-                train_accuracy_score.append(accuracy_score(y_train, y_train_pred))
-                test_accuracy_score.append(accuracy_score(y_test, y_test_pred))
-                train_log_loss.append(log_loss(y_train, y_train_pred))
-                test_log_loss.append(log_loss(y_test, y_test_pred))
+            p = SimpleClassificationPipeline(config=model)
+            p.fit(X_train, y_train)
+            #scores = sklearn.model_selection.cross_validate(p, X, y, scoring=scoring, cv=5, return_train_score=True)
+            #print(scores)
+            y_train_pred = p.predict(X_train)
+            y_test_pred = p.predict(X_test)
+            train_accuracy_score.append(accuracy_score(y_train, y_train_pred))
+            test_accuracy_score.append(accuracy_score(y_test, y_test_pred))
+            train_log_loss.append(log_loss(y_train, y_train_pred))
+            test_log_loss.append(log_loss(y_test, y_test_pred))
             time_end = time.time()
             duration = time_end - time_start
             models_performance[i] = {"train_accuracy_score": np.mean(train_accuracy_score),
                              "test_accuracy_score": np.mean(test_accuracy_score),
                              "train_log_loss" : np.mean(train_log_loss),
                              "test_log_loss" : np.mean(test_log_loss),
-                             "duration" : duration/5}
+                             "duration" : duration}
             #if i in duration:
             #    models_performance[i]["duration"] = duration[i]
     repreduce_performance_json_filename = tried_models_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"

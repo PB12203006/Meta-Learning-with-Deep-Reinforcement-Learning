@@ -5,7 +5,7 @@ from Generate_Data_Set import generate_data_set
 import numpy as np
 
 # input tuple (x,y)
-def run_autosklearn(input,threadidx):
+def run_autosklearn(input,threadidx, verbose=False):
     X = input[0]
     y = input[1]
     path = './log_rnn'+str(threadidx)
@@ -25,15 +25,17 @@ def run_autosklearn(input,threadidx):
             delete_output_folder_after_terminate=False,
             ensemble_size=1, initial_configurations_via_metalearning=38)
     automl.fit(X_train, y_train, dataset_name="test")
-    print(automl.show_models())
+    if verbose:
+        print(automl.show_models())
     return path+'/AutoML(1):test.log'
 
-def get_metadata(input,threadidx):
-    path = run_autosklearn(input,threadidx)
+def get_metadata(input, threadidx, verbose=False):
+    path = run_autosklearn(input, threadidx, verbose)
     metadatadict = load_metadata(path)
-    print(metadatadict)
     metadatavector = encode_without_read(metadatadict)
-    print(metadatavector)
+    if verbose:
+        print(metadatadict)
+        print(metadatavector)
     return np.array(metadatavector)
 
 if __name__ == "__main__":

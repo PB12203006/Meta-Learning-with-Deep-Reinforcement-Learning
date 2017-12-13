@@ -107,6 +107,7 @@ def encode_without_read(metafeatures):
         if key in metafeatures:
             metafeatures_vector.append(metafeatures[key])
     return metafeatures_vector
+
 def encode_metadata_vector(data_set_index):
     
     #np.savetxt('Data_Set/X_' + str(data_set_index), X)
