@@ -1,21 +1,31 @@
 # Meta-Learning-with-Deep-Reinforcement-Learning
 
-__Generate_Data_Set.py__   Generates DataSet
+* __Auto_test_on_generated_data.py__  Processes Dataset with Auto-sklearn
 
-__Auto_test_on_generated_data.py__  Processes Dataset with Auto-sklearn
+* __Generate_Data_Set.py__   Generates DataSet
 
-__get_autosklean_tried_models_hyperparameters.py__   Parses the log of Auto-sklearn
+* __generate_random_model.py__  generate a random model, uniform distributed
 
-__reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
+* __get_autosklean_tried_models_hyperparameters.py__   Parses the log of Auto-sklearn
 
-__summary.ipynb__   Summarizes the statistics to produce input to neural network
+* __get_metadata_from_log.py__ get the metadata of a given dataset index (with log file)
 
-__generate_random_model.py__  generate a random model, uniform distributed
+* __get_metadata.py__  get the metadata of a given dataset
 
-__get_metadata.py__  get the metadata of a given dataset
+* __get_performance_of_encoded_model.py__ get performance dictionary/encoded matrix from encoded model choice matrix/vector
 
-__plot.py__  plot the result
+* __integrate_rnn_input_matrix.py__ integrate metadata, model choices, model performance arrays
 
-__randomlearning.py__  generate a random model and implement it on dataset
+* __plot.py__  plot the result
 
-Up till milestone, all code are tentative.
+* __randomlearning.py__  generate a random model and implement it on dataset
+
+* __reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
+
+* __RNN.py__ generate, train and evaluate RNN model
+
+* __Reinforcement_Learning*.py__ RL model
+
+* __sample_model_choice.py__ sample and get predicted model choice from rnn prediction/probability
+
+* __summary.ipynb__   Summarizes the statistics to produce input to neural network
