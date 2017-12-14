@@ -314,6 +314,9 @@ def bernoulli_nb_param_loss_(y_true, y_pred):
     return bernoulli_nb_loss
 
 def get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix):
+    '''
+    Generate RNN model
+    '''
     max_length = 20 # sequence length
     meta_statistics_input_layer = Input(shape=(None, 38)) # meta_statistics_input num
     x_last_input_layer = Input(shape=(None, 17))
@@ -338,6 +341,9 @@ def get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_ma
     return model
 
 def train_rnn(model_file_name='rnn0'):
+    '''
+    Load RNN model from model check point file and train RNN and save checkpoint.
+    '''
     metafeatures_matrix, input_model_choice_matrix, predict_model_choice_matrix, input_performance_matrix = np.load('metafeatures_matrix.npy'), np.load('input_model_choice_matrix.npy'), np.load('predict_model_choice_matrix.npy'), np.load('input_performance_matrix.npy')
     rnn_model = get_rnn(metafeatures_matrix, input_model_choice_matrix, input_performance_matrix, predict_model_choice_matrix)
     rnn_save_name = model_file_name
@@ -351,6 +357,13 @@ def evaluate_action_on_dataset(dataset, action):
     return model_choice, model_performance, model_performance[1]
 
 def evaluate_policy_network_on_dataset(rnn_model, dataset, metadata, num_steps=10):
+    '''
+    Evaluate policy network on dataset(X, y).
+    rnn_model: specific rnn_model trained before
+    dataset: (X, y)
+    metadata: metadata of dataset
+    nums_steps: get test accuracy list for all evaluate steps 
+    '''
     X, y = dataset
     assert(metadata.shape == (38,))
     model_choice_history = [np.array([0] * 17)]
@@ -371,6 +384,9 @@ def evaluate_policy_network_on_dataset(rnn_model, dataset, metadata, num_steps=1
     return result_rnn
 
 def accuracy_rnn_random_on_datasets(rnn_model, dataset_range_to, model_file_name):
+    '''
+    Compare the test accuracy of RNN model and randomized search model on same dataset
+    '''
     generate_range = range(dataset_range_to)
     rnn_results = []
     random_results = []

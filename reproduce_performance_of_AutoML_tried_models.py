@@ -12,6 +12,11 @@ from sklearn.model_selection import train_test_split, KFold
 performance_keys = ["train_accuracy_score", "test_accuracy_score", "train_log_loss", "test_log_loss"]
 
 def get_models_performance(reproduce_num, data_set_idx):
+    '''
+    reproduce_num: the number of model choices for the dataset to reproduce
+    data_set_idx: generated data set index, will load tried models for the dataset json file
+    return: reproduced models performance json file
+    '''
     X = np.loadtxt('Data_Set/X_' + str(data_set_idx))
     y = np.loadtxt('Data_Set/y_' + str(data_set_idx))
     probas = np.loadtxt('Data_Set/probas_' + str(data_set_idx))
@@ -52,7 +57,7 @@ def get_models_performance(reproduce_num, data_set_idx):
                              "duration" : duration}
             #if i in duration:
             #    models_performance[i]["duration"] = duration[i]
-    repreduce_performance_json_filename = tried_models_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
+    repreduce_performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
     with open(repreduce_performance_json_filename, 'w') as fp:
         json.dump(models_performance, fp)
     return models_performance
@@ -69,6 +74,10 @@ def get_training_duration(data_set_idx):
     return duration
 
 def encode_performance_of_model(data_set_idx):
+    '''
+    Encode performance json to encoded performance matrix (reproduce_num * 4) 
+    data_set_idx: generated data set index, will load reproduced models performance json file of this dataset
+    '''
     performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
     performance_json = {}
     with open(performance_json_filename) as fp:

@@ -12,7 +12,10 @@ from sklearn.model_selection import train_test_split, KFold
 performance_keys = ["train_accuracy_score", "test_accuracy_score", "train_log_loss", "test_log_loss"]
 
 def reverse_model_hyperparameters_list():
-    # global model_hyperparameters_list
+    '''
+    If value of model_hyperparameters_list[i][key] is a dictionary, reverse (key, value) pairs in values.
+    For example: "preprocessor:pca:whiten" : {True: 0, False: 1} => "preprocessor:pca:whiten" : {0: True, 1: False}
+    '''
     reversed_model_hyperparameters_list = []
     for param_dict in model_hyperparameters_list:
         for key, value in param_dict.items():
@@ -23,6 +26,10 @@ def reverse_model_hyperparameters_list():
     return reversed_model_hyperparameters_list
 
 def decode_model(encoded_model_hyperparameters):
+    '''
+    encoded_model_hyperparameters : encoded model choice vector (17 * 1)
+    return : decoded model choice dcitionary
+    '''
     model_hyperparameters_decode_list = reverse_model_hyperparameters_list()
     #print(encoded_model_hyperparameters)
     decoded_model = {}
@@ -72,6 +79,9 @@ def decode_model(encoded_model_hyperparameters):
     return decoded_model
     
 def parse_encode_field(keyword, idx, start, end, model_hyperparameters_decode_list, encoded_model_hyperparameters, decoded_model):
+    '''
+    Worker for decoding model
+    '''
     for i in range(start, end):
         param_dict = model_hyperparameters_decode_list[i]
         for key, values in param_dict.items():
@@ -105,7 +115,11 @@ def parse_encode_field(keyword, idx, start, end, model_hyperparameters_decode_li
     
 def get_performance_of_encoded_model(data_set, encoded_model, verbose=False):
     """
-    Get model performance from encoded vector
+    Get model performance array(4 * 1) from encoded model vector(17 * 1)
+    data_set : (X, y) input dataset to get performance
+    encoded_model : encoded model choice vector (17 * 1)
+    verbose : if True, will log model choice dictionary and model performance array
+    return : model performance vector(4 * 1)
     """
     train_accuracy_score = []
     test_accuracy_score = []
@@ -129,14 +143,15 @@ def get_performance_of_encoded_model(data_set, encoded_model, verbose=False):
     train_log_loss.append(log_loss(y_train, y_train_pred))
     test_log_loss.append(log_loss(y_test, y_test_pred))
     model_performance = np.array([np.mean(train_accuracy_score), np.mean(test_accuracy_score), np.mean(train_log_loss), np.mean(test_log_loss)])
-    #print('Model Performance: {o}'.format(model_performance))
+    if verbose:
+        print('Model Performance: {o}'.format(model_performance))
     return model_performance
     
     
 
 def get_performance_of_range_encoded_models(data_set_idx, encoded_all_model_hyperparameters, json_model, verbose=False):
     """
-    Get models performance from encoded matrix
+    Get models performance (30 * 5) from encoded model choice matrix (30 * 38)
     """
     X = np.loadtxt('Data_Set/X_' + str(data_set_idx))
     y = np.loadtxt('Data_Set/y_' + str(data_set_idx))
@@ -194,6 +209,10 @@ def save_json_performance_of_encoded_model(i):
     get_performance_of_range_encoded_models(i, encoded_all_model_hyperparameters, json_model)
     
 def encode_performance_of_model(data_set_idx):
+    '''
+    data_set_idx: generated data set index, will load reproduce model performace json file
+    return : encoded performance vector (4 * 1)
+    '''
     performance_json_filename = "./log/classifier_log" + str(data_set_idx) + "/reproduce_models_performance" + str(data_set_idx) + ".json"
     performance_json = {}
     with open(performance_json_filename) as fp:

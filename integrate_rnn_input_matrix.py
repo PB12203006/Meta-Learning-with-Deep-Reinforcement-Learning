@@ -10,6 +10,10 @@ import traceback
 import sys
 
 def integrate_encoded_data_for_one_dataset(data_set_index):
+    '''
+    data_set_index: generated data set index, will load metafeatures, model choices, performance matrix file of the dataset.
+    return: integrated matrices (metafeatures_matrix(30 * 38), model_choice_matrix(30 * 17), performance_matrix(30 * 4))
+    '''
     metafeatures_vector = []
     model_choice_matrix = []
     performance_matrix = []
@@ -46,6 +50,11 @@ def integrate_encoded_data_for_one_dataset(data_set_index):
     
 
 def integrate_encoded_data_for_datasets(dataset_range):
+    '''
+    Integrate encoded data(metafeatures, model_choice, performance) for a range of dataset
+    dataset_range: generated data set index range
+    return: 3D tensors
+    '''
     metafeatures_matrix = []
     input_model_choice_matrix = []
     predict_model_choice_matrix = []

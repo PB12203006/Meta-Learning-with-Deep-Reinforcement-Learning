@@ -56,6 +56,10 @@ def parse_num_from_str(s):
         return float(s)
 
 def load_metadata(model_hyperparameters_filename):
+    '''
+    params: log file name (.log)
+    return: metafeatues.json
+    '''
     print("Parsing metadata/metafeatures from " + model_hyperparameters_filename)
     #metafeatures_filename = "./log/classifier_log" + str(data_set_num) + "/metafeatures.json"
     with open(model_hyperparameters_filename) as f:
@@ -79,6 +83,10 @@ def load_metadata(model_hyperparameters_filename):
     
     
 def get_metadata_from_log(data_set_num):
+    '''
+    param: generated data set num, will load log for this dataset.
+    return: metafeatures.json
+    '''
     model_hyperparameters_filename = "./log/classifier_log" + str(data_set_num) + "/AutoML(1):simulated" + str(data_set_num) + ".log"
     print("Parsing metadata/metafeatures from " + model_hyperparameters_filename)
     metafeatures_filename = "./log/classifier_log" + str(data_set_num) + "/metafeatures.json"
@@ -102,6 +110,10 @@ def get_metadata_from_log(data_set_num):
     return metafeatures
 
 def encode_without_read(metafeatures):
+    '''
+    param: metafuatures dictionary
+    return: encoded metafeatures vector (38 * 1)
+    '''
     metafeatures_vector = []
     for key in metadata_dict_keys:
         if key in metafeatures:
@@ -109,7 +121,10 @@ def encode_without_read(metafeatures):
     return metafeatures_vector
 
 def encode_metadata_vector(data_set_index):
-    
+    '''
+    param: generated data set index, will load metafeatures.json of this dataset
+    return: encoded metafeatures vector (38 * 1)
+    '''
     #np.savetxt('Data_Set/X_' + str(data_set_index), X)
     #np.savetxt('Data_Set/y_' + str(data_set_index), y)
     metafeatures_filename = "./log/classifier_log" + str(data_set_index) + "/metafeatures.json"
