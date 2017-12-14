@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+'''for ploting result'''
 #input [(str,[]),...]
 def plot(title,input):
     fig = plt.figure()
@@ -14,7 +14,7 @@ def plot(title,input):
     fig.savefig(title+'.png')
     #plt.show()
 
-    
+#process the result, keep the current best model 
 def maxresult(array):
     for i in range(1,array.shape[0]):
         array[i] = max(array[i],array[i-1])
