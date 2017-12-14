@@ -83,8 +83,8 @@ def integrate_encoded_data_for_datasets(dataset_range):
 if __name__ == '__main__':
     generate_range = range(int(sys.argv[1]), int(sys.argv[2]))
     data1, data2, data3, data4 = integrate_encoded_data_for_datasets(generate_range)
-    np.save('metafeatures_matrix',data1)
-    np.save('input_model_choice_matrix',data2)
-    np.save('predict_model_choice_matrix',data3)
-    np.save('input_performance_matrix',data4)
+    #np.save('metafeatures_matrix',data1)
+    #np.save('input_model_choice_matrix',data2)
+    #np.save('predict_model_choice_matrix',data3)
+    #np.save('input_performance_matrix',data4)
     

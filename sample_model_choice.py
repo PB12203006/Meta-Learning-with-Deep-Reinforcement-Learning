@@ -60,6 +60,8 @@ def sample_softmax(y_hat, dimensions):
     return y_hat
 
 def sample_continuous(y_hat, dimension):
+    if dimension == 12:
+        print(y_hat[12])
     sample_range = continueous_range[dimension]
     EPSILON = 1e-7
     if dimension == 14:
@@ -68,6 +70,8 @@ def sample_continuous(y_hat, dimension):
         y_hat[dimension] = sample_range[0] + EPSILON
     elif y_hat[dimension] > sample_range[1]:
         y_hat[dimension] = sample_range[1] - EPSILON
+    if dimension == 12:
+        print(y_hat[12])
     return y_hat
         
 def sample_model_prediction(model_dist):
@@ -86,7 +90,7 @@ def sample_model_prediction(model_dist):
     model_choice = sample_binary(model_choice, 9)
     
     model_choice = sample_binary(model_choice, 10)
-
+    
     model_choice = sample_continuous(model_choice, 11)
     
     model_choice = sample_continuous(model_choice, 12)
@@ -112,14 +116,14 @@ def sample_model_choice_from_prob(model_probability):
     assert(0.0<= model_probability[0] <= 1.0) # 0 : balancing:strategy
     model_choice[0] = 1.0 if model_probability[0] >= r[0] else 0.0
     
-    assert(model_probability[1] + model_probability[2] + model_probability[3] == 1.0) # 1,2,3 : imputation:strategy
+    assert(abs(model_probability[1] + model_probability[2] + model_probability[3] - 1.0) < 0.001) # 1,2,3 : imputation:strategy
     model_probability[2] = model_probability[1] + model_probability[2]
     model_probability[3] = model_probability[2] + model_probability[3]
     model_choice[1] = 1.0 if 0.0 <= r[1] < model_probability[1] else 0.0
     model_choice[2] = 1.0 if model_probability[1] <= r[1] < model_probability[2] else 0.0 # do not use r[2]
     model_choice[3] = 1.0 if model_probability[2] <= r[1] <= 1.0 else 0.0 # do not use r[3]
     
-    assert(model_probability[4] + model_probability[5] + model_probability[6] + model_probability[7] == 1.0) # 4,5,6,7 : rescaling:__choice__
+    assert(abs(model_probability[4] + model_probability[5] + model_probability[6] + model_probability[7] - 1) < 0.02) # 4,5,6,7 : rescaling:__choice__
     model_probability[5] = model_probability[4] + model_probability[5]
     model_probability[6] = model_probability[5] + model_probability[6]
     model_probability[7] = model_probability[6] + model_probability[7]
@@ -138,23 +142,23 @@ def sample_model_choice_from_prob(model_probability):
     model_choice[10] = 1.0 if model_probability[10] >= r[10] else 0.0
     
     # 11: one_hot_encoding:minimum_fraction [0.0001, 0.5]
-    model_choice = sample_continuous(model_choice, 11)
+    model_choice[11] = 0.49
     
-    # 12: preprocessor:pca:keep_variance  [0.01, 100.0]
-    model_choice = sample_continuous(model_choice, 12)
+    # 12: preprocessor:pca:keep_variance  [0.5, 0.99]
+    model_choice[12] = 0.48 * model_probability[12] + 0.5
     
     assert(0.0 <= model_probability[13] <= 1.0) # 13 : preprocessor:pca:whiten True/False
     model_choice[13] = 1.0 if model_probability[13] >= r[13] else 0.0
     
     # 14: classifier:bernoulli_nb:alpha    [0.01, 100.0]
-    model_choice = sample_continuous(model_choice, 14)
+    model_choice[14] = 0.1 ** (model_probability[14] * 4 - 2)
     
     assert(0.0 <= model_probability[15] <= 1.0) # 15 : classifier:bernoulli_nb:fit_prior : True/False
     model_choice[15] = 1.0 if model_probability[15] >= r[15] else 0.0
     
     # 16: classifier:qda:reg_param    [0.0, 1.0]
-    model_choice = sample_continuous(model_choice, 16)
-
+    model_choice[16] = model_probability[16]
+    
     return model_choice
 
 if __name__ == '__main__':
@@ -171,5 +175,4 @@ if __name__ == '__main__':
     X, y, probas = generate_data_set(N, D)
     
     print(get_performance_of_encoded_model((X,y), model_choice))
-
     

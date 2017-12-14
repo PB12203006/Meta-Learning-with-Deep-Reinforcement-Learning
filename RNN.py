@@ -361,22 +361,13 @@ def evaluate_policy_network_on_dataset(rnn_model, dataset, metadata, num_steps=1
         performance_history_in = np.array([performance_history])
         model_choice_history_in = np.array([model_choice_history])
         action = rnn_model.predict([meta_data_history_in, model_choice_history_in, performance_history_in])[0][-1]
-        #model_chosen = sample_model_prediction(action)
-        #model_performance = get_performance_of_encoded_model(dataset, model_chosen)
-        #accuracy = model_performance[1]
-        #model_performance_array = np.array([model_performance[x] for x in model_performance])
         model_chosen, model_performance, accuracy = evaluate_action_on_dataset(dataset, action)
         assert(model_chosen.shape == (17,))
         assert(model_performance.shape == (4,))
         model_choice_history.append(model_chosen)
         performance_history.append(model_performance)
-        #print(accuracy)
         result_rnn.append(accuracy)
 
-    #Evaluate randomized search and autosklearn
-    #result_random = []
-    #result_autosklearn = []
-    print(result_rnn)
     return result_rnn
 
 def accuracy_rnn_random_on_datasets(rnn_model, dataset_range_to, model_file_name):
@@ -427,7 +418,6 @@ if __name__ == '__main__':
     #rnn_model.fit([metafeatures_matrix, input_model_choice_matrix, input_performance_matrix], predict_model_choice_matrix, epochs=1000, batch_size=64, validation_split=0.2, callbacks= [checkpoint])
     
     model_file_name = './rnn_models/rnn_balance'
-    #rnn_model = train_rnn(model_file_name)
     rnn_model.load_weights(model_file_name)
     dataset_range_to = 20
     rnn_results, random_results = accuracy_rnn_random_on_datasets(rnn_model, dataset_range_to, model_file_name)

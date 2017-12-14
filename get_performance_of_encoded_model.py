@@ -116,7 +116,7 @@ def get_performance_of_encoded_model(data_set, encoded_model, verbose=False):
     model = decode_model(encoded_model)
     if verbose:
         print('Model choice: {0}'.format(model))
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
         
     p = SimpleClassificationPipeline(config=model)
     p.fit(X_train, y_train)
