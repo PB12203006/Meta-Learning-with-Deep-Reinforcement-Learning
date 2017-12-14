@@ -10,4 +10,12 @@ __reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Aut
 
 __summary.ipynb__   Summarizes the statistics to produce input to neural network
 
+__generate_random_model.py__  generate a random model, uniform distributed
+
+__get_metadata.py__  get the metadata of a given dataset
+
+__plot.py__  plot the result
+
+__randomlearning.py__  generate a random model and implement it on dataset
+
 Up till milestone, all code are tentative.
