@@ -24,8 +24,6 @@
 
 * __RNN.py__ generate, train and evaluate RNN model (policy network)
 
-* __Reinforcement_Learning*.py__ RL model
-
 * __sample_model_choice.py__ sample and get predicted model choice from rnn prediction/probability
 
 * __summary.ipynb__   Summarizes the statistics to produce input to neural network
