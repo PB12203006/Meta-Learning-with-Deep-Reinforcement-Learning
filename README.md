@@ -22,10 +22,16 @@
 
 * __reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
 
-* __RNN.py__ generate, train and evaluate RNN model
+* __RNN.py__ generate, train and evaluate RNN model (policy network)
 
 * __Reinforcement_Learning*.py__ RL model
 
 * __sample_model_choice.py__ sample and get predicted model choice from rnn prediction/probability
 
 * __summary.ipynb__   Summarizes the statistics to produce input to neural network
+
+* __Reinforcement_Learning_Run__ : first round of Reinforcement learning.
+
+* __Reinforcement_Learning_Two__ : second round of Reinforcement learning.
+
+* __Reinforcement_Learning_Three__ : third round of Reinforcement learning.
