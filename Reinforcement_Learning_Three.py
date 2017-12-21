@@ -71,13 +71,18 @@ def train_network(iteration_idx, meta_data, model_choices, model_performances, a
     from keras import models
     from keras.layers import Input, Dense, LSTM, Concatenate
     from keras import backend as K
+    #load the saved model
     qsa_model = models.load_model('models_Three/model_%d' % iteration_idx)
     values = np.expand_dims(values, axis=2)
+    #train
     qsa_model.fit([meta_data, model_performances, model_choices, actions], values, batch_size=32, epochs=2)
     qsa_model.save('models_Three/model_' + str(iteration_idx + 1))
     return
 
 #Evaluate the policy for sample_count times using num_threads threads
+#iteration_idx, the current iteration index in the whole evluate->train->evaluate process
+#num_threads: the number of threads used in evaluation
+#sample_count: how many samples do we need in the evaluation stage
 def evaluate(iteration_idx,  num_threads, sample_count):
     num_threads = num_threads
     manager = Manager()
@@ -121,6 +126,10 @@ def evaluate(iteration_idx,  num_threads, sample_count):
     np.save('models_Three/iteration_' + str(iteration_idx) + '_variance', curve_std)
     return np.array(meta), np.array(performance), np.array(choices), np.array(actions), np.array(q)
 
+#The evaluation stage for the thread
+#A wrapper function
+#EPSILON: the epsilon in the epsilon greedy approximation algorithm
+#data_needed: # of data needed for the entire evaluation phase. When we have evaluated enough data, the algorithm stops
 def thread_evaluate(lock, thread_idx, return_dict, iteration_idx, EPSILON, data_needed):
     from keras import models
     model_dir = 'models_Three/model_' + str(iteration_idx)
@@ -132,11 +141,11 @@ def thread_evaluate(lock, thread_idx, return_dict, iteration_idx, EPSILON, data_
         lock.release()
         _evaluate_on_data_set_(thread_idx, return_dict, qsa_model, EPSILON, data_idx)
 
-
 #The evaluation phase goes to here
 #It is generating the data: meta_data, model_choices, model_performances, actions, values
 #for the training
 #It is better implemented as multi-thread process
+#All the evaluation result is stored in return_dict, a variable shared by all threads
 def _evaluate_on_data_set_(thread_idx, return_dict, qsa_model, EPSILON, data_idx):
     np.random.seed(seed=int(thread_idx * int(time.time() / 100)))
     METADATA_DIM = 29
@@ -185,10 +194,12 @@ def _evaluate_on_data_set_(thread_idx, return_dict, qsa_model, EPSILON, data_idx
         meta_data_history_ = np.tile(meta_data, (step + 1 , 1)).reshape((1, step + 1, 29))
         performance_history_ = np.array([performance_history])
         model_choice_history_ = np.array([model_choice_history])
+        #epsilon greedy exploration
         if np.random.random() > EPSILON:
             proposal = []
             #find the action that maximizes Q by randomly sampling 100 points and evaluate them through NN
             for _ in range(100):
+                #generate_action: draw an action from a "prior distribution"
                 proposal.append(generate_action())
             proposal = np.array(proposal)
             proposal = np.expand_dims(proposal, axis=1)
@@ -197,11 +208,13 @@ def _evaluate_on_data_set_(thread_idx, return_dict, qsa_model, EPSILON, data_idx
             else:
                 a_h = np.tile(np.array(action_history[:]), (100,1, 1))
                 action_history_ = np.concatenate((a_h, proposal), axis=1)
+            #predict the value of the actions in each of the model
             value = qsa_model.predict([np.tile(meta_data_history_, (100,1,1)),
                                        np.tile(performance_history_,(100,1,1)),
                                        np.tile(model_choice_history_, (100,1,1)),
                                        np.tile(action_history_, (100,1,1))])
             value = value[:,-1,0]
+            #find the action that maximizes the value
             chosen_action = proposal[np.argmax(value)][0]
         else:
             chosen_action = generate_action()
@@ -233,16 +246,29 @@ def reinforcement_learning(num_iterations):
     #creating a network
     call(['rm', '-rf', 'models_Three'])
     call(['mkdir', 'models_Three'])
+    #128 hidden units
+    #29 dimension metadata
+    #17 dimension encoded model choice
+    #4 dimension model performance
+    #128 hidden units per layer
     process = Process(target=create_Q_network, args=(128, 29, 17, 4, 17, 128))
     process.start()
     process.join()
     for iteration_idx in range(num_iterations):
         #evaluate
+        #using 32 threads
+        #need 4096 evaluated data points
+        #m: meta data
+        #p: performance
+        #c: model choice
+        #a: action
+        #q: Q(s,a)
         m, p, c, a, q = evaluate(iteration_idx, 32, 4096)
         #train
         process = Process(target=train_network, args=(iteration_idx, m, c, p, a, q))
         process.start()
         process.join()
 
+#running the RL algorithm for 100 iterations
 reinforcement_learning(100)
 
