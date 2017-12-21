@@ -1,6 +1,6 @@
 # Meta-Learning-with-Deep-Reinforcement-Learning
 
-Dependencies: autosklearn, tensorflow, Keras
+Dependencies: autosklearn, tensorflow, Keras, Jupyter Notebook
 
 Use the command "python3 Reinfocement_Learning_Three.py" to run the reinforcement Learning algorithm (for round 3).
 
