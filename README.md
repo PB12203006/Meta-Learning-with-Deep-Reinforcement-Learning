@@ -1,7 +1,9 @@
 # Meta-Learning-with-Deep-Reinforcement-Learning
 
 Dependencies: autosklearn, tensorflow, Keras
+
 Use the command "python3 Reinfocement_Learning_Three.py" to run the reinforcement Learning algorithm (for round 3).
+
 Then using jupyter notebook to open "Visualize_improved_RL.ipynb" to visualize the RL progress.
 
 * __Auto_test_on_generated_data.py__  Processes Dataset with Auto-sklearn
