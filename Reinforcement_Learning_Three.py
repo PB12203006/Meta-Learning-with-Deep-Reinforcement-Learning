@@ -152,6 +152,7 @@ def _evaluate_on_data_set_(thread_idx, return_dict, qsa_model, EPSILON, data_idx
     ACTION_DIM = 17
     PERFORMANCE_DIM = 4
     CHOICE_DIM = 17
+    #We only consider the first attempted model as specified in our report, round3
     num_of_steps = 1
     #Generate Data set
     #Get metastatistics
