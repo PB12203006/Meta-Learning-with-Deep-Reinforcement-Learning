@@ -24,6 +24,8 @@ Then using jupyter notebook to open "Visualize_improved_RL.ipynb" to visualize t
 
 * __plot.py__  plot the result
 
+* __Visualize_improved_RL.ipynb__ the visualization for RL.
+
 * __randomlearning.py__  generate a random model and implement it on dataset
 
 * __reproduce_performance_of_AutoML_tried_models.py__   Reproduces the path of Auto-sklearn by calling sklearn directly
